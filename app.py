@@ -8,7 +8,7 @@ from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 import jwt
 
-from scenarios import scenarios
+from scenarios import scenarios  # mevcut senaryoların
 
 app = Flask(__name__)
 
@@ -18,16 +18,15 @@ BACKEND_URL = os.environ.get("BACKEND_URL")
 app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
 JWT_SECRET = os.environ.get("JWT_SECRET")
 
-# Origin'i FRONTEND_URL'den otomatik çıkar (scheme://host[:port])
-def extract_origin(url):
-  if not url:
-    return None
-  u = urlparse(url)
-  return f"{u.scheme}://{u.netloc}"
+def extract_origin(url: str):
+    if not url:
+        return None
+    u = urlparse(url)
+    return f"{u.scheme}://{u.netloc}"
 
 FRONTEND_ORIGIN = extract_origin(FRONTEND_URL)
 
-# ---- CORS (sadece /api/*) ----
+# ---- CORS (yalnızca /api/*) ----
 CORS(
     app,
     resources={
@@ -59,7 +58,7 @@ oauth.register(
     client_kwargs={"scope": "openid email profile", "prompt": "consent"},
 )
 
-# Facebook
+# Facebook (istersen kullanırsın; Google tek başına yeter)
 oauth.register(
     name="facebook",
     client_id=os.environ.get("FACEBOOK_CLIENT_ID"),
@@ -217,4 +216,5 @@ def ask():
         return jsonify({"error": "Soru cevaplanırken hata oluştu"}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Prod’da gunicorn kullanacaksın; bu sadece lokal deneme için.
+    app.run(host="0.0.0.0", port=5000, debug=True)
