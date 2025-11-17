@@ -16,7 +16,7 @@ export function GameProvider({ children }) {
     try {
       setLoading(true);
       setError(null);
-      const res = await api.get("/api/scenarios"); // ✅ /api prefix
+      const res = await api.get("/api/scenarios");
       setScenarios(res.data || []);
     } catch (e) {
       console.error(e);
