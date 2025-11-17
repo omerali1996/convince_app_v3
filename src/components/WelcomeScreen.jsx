@@ -154,19 +154,9 @@ Hazırsan, oyun başlasın. 🧠💥`;
               <button onClick={logout} className="btn btn-secondary">
                 Çıkış
               </button>
-                        </div>
+            </div>
           ) : (
-            <>
-              {/* --- Google + Misafir butonları --- */}
-              {showButtonGroup && (
-                <motion.div
-                  initial={{ y: 40, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  style={stackButtons}
-                >
-                  {/* Google */}
-                  <button onClick={loginWithGoogle} className="btn btn-secondary" style={stackBtnItem}>
+                              <button onClick={loginWithGoogle} className="btn btn-secondary" style={stackBtnItem}>
                     <img
                       src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                       alt="Google"
@@ -176,23 +166,32 @@ Hazırsan, oyun başlasın. 🧠💥`;
                     />
                     Google ile giriş yap
                   </button>
-
-                  {/* 🔥 Misafir Oyna aynı stil */}
-                  <button onClick={startGuestGame} className="btn btn-secondary" style={stackBtnItem}>
-                    <img
-                      src="https://cdn-icons-png.flaticon.com/512/456/456212.png"
-                      alt="Guest"
-                      width={16}
-                      height={16}
-                      style={{ marginRight: 8, opacity: 0.8 }}
-                    />
-                    {user ? "Oynamaya Başla" : "Misafir Oyna"}
-                  </button>
-                </motion.div>
-              )}
-            </>
           )}
         </div>
+
+        <div className="ws-textContainer" style={textContainer}>
+          <div className="ws-subtitle" style={subtitle}>
+            {displayedText}
+            {isTyping && <span style={cursor}>|</span>}
+          </div>
+        </div>
+
+        {showButton && (
+          <motion.button
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            onClick={handleStart}
+            className="ws-startBtn btn btn-primary"
+            style={buttonStyle}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {user ? "Oynamaya Başla" : "Misafir Oyna"}
+          </motion.button>
+        )}
+      </motion.div>
+    </div>
   );
 }
 
