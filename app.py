@@ -18,9 +18,14 @@ BACKEND_URL = os.environ.get("BACKEND_URL")
 app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
 JWT_SECRET = os.environ.get("JWT_SECRET")
 
+# Başta kritik env kontrolleri (hata olursa net mesaj ver)
+_missing = [k for k in ["FRONTEND_URL", "BACKEND_URL", "FLASK_SECRET_KEY", "JWT_SECRET",
+                        "OPENAI_API_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
+            if not os.environ.get(k)]
+if _missing:
+    raise RuntimeError(f"Missing required env vars: {', '.join(_missing)}")
+
 def extract_origin(url):
-    if not url:
-        return None
     u = urlparse(url)
     return f"{u.scheme}://{u.netloc}"
 
@@ -31,7 +36,7 @@ CORS(
     app,
     resources={
         r"/api/*": {
-            "origins": [FRONTEND_ORIGIN] if FRONTEND_ORIGIN else "*",
+            "origins": [FRONTEND_ORIGIN],
             "supports_credentials": True,
             "allow_headers": ["Content-Type", "Authorization"],
             "expose_headers": ["Authorization"],
@@ -41,12 +46,9 @@ CORS(
 )
 
 # ---- OpenAI ----
-API_KEY = os.environ.get("OPENAI_API_KEY")
-if not API_KEY:
-    raise ValueError("OPENAI_API_KEY environment variable is not set!")
-client = OpenAI(api_key=API_KEY)
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# ---- OAuth ----
+# ---- OAuth (Google) ----
 oauth = OAuth(app)
 oauth.register(
     name="google",
@@ -66,12 +68,11 @@ def issue_jwt(user):
         "picture": user.get("picture"),
         "provider": user.get("provider"),
         "iat": now,
-        "exp": now + 7 * 24 * 60 * 60,  # 7 gün
+        "exp": now + 7 * 24 * 60 * 60,
         "iss": "convince-backend",
         "aud": "convince-frontend",
     }
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-    return token
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
 def current_user_from_auth_header():
     auth = request.headers.get("Authorization", "")
@@ -79,8 +80,7 @@ def current_user_from_auth_header():
         return None
     token = auth.split(" ", 1)[1].strip()
     try:
-        data = jwt.decode(token, JWT_SECRET, algorithms=["HS256"], audience="convince-frontend")
-        return data
+        return jwt.decode(token, JWT_SECRET, algorithms=["HS256"], audience="convince-frontend")
     except Exception:
         return None
 
@@ -93,7 +93,7 @@ def root():
 def healthz():
     return jsonify({"status": "ok"}), 200
 
-# ---- Auth endpoints ----
+# ---- Auth ----
 @app.route("/api/auth/login/google")
 def auth_login_google():
     redirect_uri = f"{BACKEND_URL}/api/auth/callback/google"
@@ -101,23 +101,56 @@ def auth_login_google():
 
 @app.route("/api/auth/callback/google")
 def auth_callback_google():
-    token = oauth.google.authorize_access_token()
-    userinfo = oauth.google.parse_id_token(token)
-    if not userinfo:
+    try:
+        # 1) Token al
+        token = oauth.google.authorize_access_token()
+
+        # 2) KESİN yoldan kullanıcı bilgisi: userinfo endpoint
+        # (ID token doğrulamasında takılmayalım; Authlib metadata'dan yolunu biliyor)
         resp = oauth.google.get("userinfo")
-        userinfo = resp.json()
+        if resp.status_code != 200:
+            # Bazı hesaplarda endpoint adı 'openid/userinfo' olabilir; alternatif dene
+            resp = oauth.google.get("openid/userinfo")
 
-    user = {
-        "sub": f"google:{userinfo.get('sub') or userinfo.get('id')}",
-        "name": userinfo.get("name"),
-        "email": userinfo.get("email"),
-        "picture": userinfo.get("picture"),
-        "provider": "google",
-    }
+        data = resp.json() if resp and resp.content else {}
 
-    jwt_token = issue_jwt(user)
-    to = f"{FRONTEND_URL}?{urlencode({'token': jwt_token})}"
-    return redirect(to, code=302)
+        # 3) user alanlarını topla (fallback: id_token varsa onu da deneriz)
+        sub = data.get("sub") or data.get("id")
+        name = data.get("name") or data.get("given_name") or ""
+        email = data.get("email")
+        picture = data.get("picture")
+
+        # Eğer userinfo boş döndüyse, parse_id_token'ı deneyelim (try/catch ile)
+        if not sub:
+            try:
+                idinfo = oauth.google.parse_id_token(token)
+                sub = idinfo.get("sub") or idinfo.get("id")
+                name = name or idinfo.get("name")
+                email = email or idinfo.get("email")
+                picture = picture or idinfo.get("picture")
+            except Exception as e:
+                print("parse_id_token failed:", e)
+
+        if not sub:
+            # Kullanıcı bilgisi alamadıysak anlamlı 500
+            return jsonify({"error": "Failed to fetch Google userinfo"}), 500
+
+        user = {
+            "sub": f"google:{sub}",
+            "name": name,
+            "email": email,
+            "picture": picture,
+            "provider": "google",
+        }
+
+        jwt_token = issue_jwt(user)
+        to = f"{FRONTEND_URL}?{urlencode({'token': jwt_token})}"
+        return redirect(to, code=302)
+
+    except Exception as e:
+        # Log + anlamlı dönüş (Render logs’ta stacktrace görünsün)
+        print("Google callback error:", repr(e))
+        return jsonify({"error": "OAuth callback failed", "detail": str(e)}), 500
 
 @app.route("/api/auth/me", methods=["GET"])
 def auth_me():
