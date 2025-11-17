@@ -8,7 +8,7 @@ from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 import jwt
 
-from scenarios import scenarios  # mevcut senaryoların
+from scenarios import scenarios
 
 app = Flask(__name__)
 
@@ -18,7 +18,7 @@ BACKEND_URL = os.environ.get("BACKEND_URL")
 app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
 JWT_SECRET = os.environ.get("JWT_SECRET")
 
-def extract_origin(url: str):
+def extract_origin(url):
     if not url:
         return None
     u = urlparse(url)
@@ -26,7 +26,7 @@ def extract_origin(url: str):
 
 FRONTEND_ORIGIN = extract_origin(FRONTEND_URL)
 
-# ---- CORS (yalnızca /api/*) ----
+# ---- CORS (sadece /api/*) ----
 CORS(
     app,
     resources={
@@ -48,25 +48,12 @@ client = OpenAI(api_key=API_KEY)
 
 # ---- OAuth ----
 oauth = OAuth(app)
-
-# Google
 oauth.register(
     name="google",
     client_id=os.environ.get("GOOGLE_CLIENT_ID"),
     client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
     client_kwargs={"scope": "openid email profile", "prompt": "consent"},
-)
-
-# Facebook (istersen kullanırsın; Google tek başına yeter)
-oauth.register(
-    name="facebook",
-    client_id=os.environ.get("FACEBOOK_CLIENT_ID"),
-    client_secret=os.environ.get("FACEBOOK_CLIENT_SECRET"),
-    access_token_url="https://graph.facebook.com/oauth/access_token",
-    authorize_url="https://www.facebook.com/v12.0/dialog/oauth",
-    api_base_url="https://graph.facebook.com/",
-    client_kwargs={"scope": "public_profile email"},
 )
 
 # ---- Helpers ----
@@ -97,47 +84,36 @@ def current_user_from_auth_header():
     except Exception:
         return None
 
+# ---- Health ----
+@app.route("/")
+def root():
+    return "OK", 200
+
+@app.route("/healthz")
+def healthz():
+    return jsonify({"status": "ok"}), 200
+
 # ---- Auth endpoints ----
-@app.route("/api/auth/login/<provider>")
-def auth_login(provider):
-    if provider not in ("google", "facebook"):
-        return jsonify({"error": "Unsupported provider"}), 400
+@app.route("/api/auth/login/google")
+def auth_login_google():
+    redirect_uri = f"{BACKEND_URL}/api/auth/callback/google"
+    return oauth.google.authorize_redirect(redirect_uri)
 
-    redirect_uri = f"{BACKEND_URL}/api/auth/callback/{provider}"
-    if provider == "google":
-        return oauth.google.authorize_redirect(redirect_uri)
-    else:
-        return oauth.facebook.authorize_redirect(redirect_uri)
+@app.route("/api/auth/callback/google")
+def auth_callback_google():
+    token = oauth.google.authorize_access_token()
+    userinfo = oauth.google.parse_id_token(token)
+    if not userinfo:
+        resp = oauth.google.get("userinfo")
+        userinfo = resp.json()
 
-@app.route("/api/auth/callback/<provider>")
-def auth_callback(provider):
-    if provider == "google":
-        token = oauth.google.authorize_access_token()
-        userinfo = oauth.google.parse_id_token(token)
-        if not userinfo:
-            resp = oauth.google.get("userinfo")
-            userinfo = resp.json()
-        user = {
-            "sub": f"google:{userinfo.get('sub') or userinfo.get('id')}",
-            "name": userinfo.get("name"),
-            "email": userinfo.get("email"),
-            "picture": userinfo.get("picture"),
-            "provider": "google",
-        }
-    elif provider == "facebook":
-        token = oauth.facebook.authorize_access_token()
-        resp = oauth.facebook.get("me", params={"fields": "id,name,email,picture.type(large)"})
-        data = resp.json()
-        pic = (data.get("picture") or {}).get("data") or {}
-        user = {
-            "sub": f"facebook:{data.get('id')}",
-            "name": data.get("name"),
-            "email": data.get("email"),
-            "picture": pic.get("url"),
-            "provider": "facebook",
-        }
-    else:
-        return jsonify({"error": "Unsupported provider"}), 400
+    user = {
+        "sub": f"google:{userinfo.get('sub') or userinfo.get('id')}",
+        "name": userinfo.get("name"),
+        "email": userinfo.get("email"),
+        "picture": userinfo.get("picture"),
+        "provider": "google",
+    }
 
     jwt_token = issue_jwt(user)
     to = f"{FRONTEND_URL}?{urlencode({'token': jwt_token})}"
@@ -216,5 +192,4 @@ def ask():
         return jsonify({"error": "Soru cevaplanırken hata oluştu"}), 500
 
 if __name__ == "__main__":
-    # Prod’da gunicorn kullanacaksın; bu sadece lokal deneme için.
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True)
