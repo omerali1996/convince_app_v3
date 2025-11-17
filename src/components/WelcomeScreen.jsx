@@ -1,4 +1,3 @@
-// WelcomeScreen.jsx
 // "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -8,12 +7,12 @@ import { useAuth } from "../context/AuthContext";
 import { BACKEND_URL } from "../api";
 
 export default function WelcomeScreen() {
-  const { startGuestGame } = useGame();  // 🔥 misafir için yeni fonksiyon
+  const { startGame } = useGame();
   const { user, checking, logout } = useAuth();
 
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [showButtonGroup, setShowButtonGroup] = useState(false);
+  const [showButton, setShowButton] = useState(false);
 
   const keyAudioRef = useRef(null);
   const nextTickRef = useRef(0);
@@ -35,9 +34,11 @@ Hazırsan, oyun başlasın. 🧠💥`;
   const playKeySound = () => {
     const a = keyAudioRef.current;
     if (!a) return;
+
     const now = performance.now();
     if (now < nextTickRef.current) return;
     if (!a.paused) return;
+
     try {
       a.volume = 0.06;
       a.currentTime = 0;
@@ -61,7 +62,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
     stopKeySound();
     setDisplayedText(fullText);
     setIsTyping(false);
-    setShowButtonGroup(true);
+    setShowButton(true);
   };
 
   useEffect(() => {
@@ -82,9 +83,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
           clearInterval(typingIntervalRef.current);
           stopKeySound();
           setIsTyping(false);
-
-          // 🔥 Yazı bitince butonlar alttan kayarak gelir
-          setTimeout(() => setShowButtonGroup(true), 700);
+          setTimeout(() => setShowButton(true), 500);
         }
       }, 50);
     }, 1200);
@@ -95,6 +94,11 @@ Hazırsan, oyun başlasın. 🧠💥`;
       stopKeySound();
     };
   }, []);
+
+  const handleStart = () => {
+    stopKeySound();
+    startGame();
+  };
 
   const loginWithGoogle = () => {
     window.location.href = `${BACKEND_URL}/api/auth/login/google`;
@@ -112,7 +116,12 @@ Hazırsan, oyun başlasın. 🧠💥`;
         style={card}
       >
         {isTyping && (
-          <button onClick={handleSkip} className="ws-skipBtn btn btn-secondary" style={skipBtn}>
+          <button
+            onClick={handleSkip}
+            className="ws-skipBtn btn btn-secondary"
+            style={skipBtn}
+            title="Yazıyı atla"
+          >
             Skip ›
           </button>
         )}
@@ -126,7 +135,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
           Müzakere.0
         </motion.h1>
 
-        {/* --- AUTH BAR --- */}
+        {/* AUTH BAR */}
         <div style={authBar}>
           {checking ? (
             <span style={{ opacity: 0.85 }}>Giriş doğrulanıyor…</span>
@@ -145,7 +154,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
               <button onClick={logout} className="btn btn-secondary">
                 Çıkış
               </button>
-            </div>
+                        </div>
           ) : (
             <>
               {/* --- Google + Misafir butonları --- */}
@@ -177,22 +186,13 @@ Hazırsan, oyun başlasın. 🧠💥`;
                       height={16}
                       style={{ marginRight: 8, opacity: 0.8 }}
                     />
-                    Misafir Oyna
+                    {user ? "Oynamaya Başla" : "Misafir Oyna"}
                   </button>
                 </motion.div>
               )}
             </>
           )}
         </div>
-
-        <div className="ws-textContainer" style={textContainer}>
-          <div className="ws-subtitle" style={subtitle}>
-            {displayedText}
-            {isTyping && <span style={cursor}>|</span>}
-          </div>
-        </div>
-      </motion.div>
-    </div>
   );
 }
 
@@ -200,14 +200,56 @@ Hazırsan, oyun başlasın. 🧠💥`;
 const responsiveStyles = `
   @media (max-width: 768px) {
     .ws-wrap { padding: 10px !important; }
-    .ws-card { max-width: 100% !important; width: 100% !important; padding: 28px 14px 56px !important; border-radius: 16px !important; }
-    .ws-subtitle { font-size: 15px !important; line-height: 1.65 !important; min-height: 44vh !important; }
-    .ws-startBtn { width: 100% !important; font-size: 16px !important; padding: 12px 14px !important; }
-    .ws-skipBtn { bottom: 8px !important; right: 8px !important; padding: 6px 10px !important; font-size: 12px !important; }
+
+    .ws-card {
+      max-width: 100% !important;
+      width: 100% !important;
+      padding: 28px 14px 56px !important;
+      border-radius: 16px !important;
+    }
+
+    .ws-subtitle {
+      font-size: 15px !important;
+      line-height: 1.65 !important;
+      min-height: 44vh !important;
+      letter-spacing: 0.1px !important;
+    }
+
+    .ws-textContainer { margin-bottom: 22px !important; }
+
+    .ws-startBtn {
+      width: 100% !important;
+      font-size: 16px !important;
+      padding: 12px 14px !important;
+    }
+
+    .ws-skipBtn {
+      bottom: 8px !important;
+      right: 8px !important;
+      padding: 6px 10px !important;
+      font-size: 12px !important;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .ws-card {
+      padding: 24px 10px 52px !important;
+    }
+    .ws-subtitle {
+      font-size: 14px !important;
+      line-height: 1.6 !important;
+      min-height: 40vh !important;
+    }
   }
 `;
 
-const wrap = { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "20px" };
+const wrap = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "100vh",
+  padding: "20px",
+};
 
 const card = {
   textAlign: "center",
@@ -228,6 +270,8 @@ const skipBtn = {
   right: 12,
   borderRadius: 10,
   fontSize: 12,
+  letterSpacing: "0.3px",
+  zIndex: 2,
 };
 
 const authBar = {
@@ -240,20 +284,21 @@ const authBar = {
   alignItems: "center",
   justifyContent: "center",
   gap: 10,
-  width: "100%",
 };
 
-const stackButtons = { display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 360 };
-const stackBtnItem = { width: "100%", justifyContent: "center", display: "flex", alignItems: "center" };
-
 const textContainer = { marginBottom: 32 };
+
 const subtitle = {
   fontSize: 16,
+  color: "var(--text)",
+  opacity: 0.9,
   lineHeight: 1.8,
   minHeight: 360,
   textAlign: "left",
   whiteSpace: "pre-wrap",
+  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
+
 const cursor = {
   display: "inline-block",
   width: "2px",
@@ -261,5 +306,32 @@ const cursor = {
   backgroundColor: "var(--accent)",
   marginLeft: "2px",
   animation: "blink 1s infinite",
+  verticalAlign: "middle",
 };
-const title = { fontSize: 32, marginBottom: 24, fontWeight: 600, letterSpacing: "0.5px" };
+
+const title = {
+  fontSize: 32,
+  marginBottom: 24,
+  color: "var(--text)",
+  fontWeight: 600,
+  letterSpacing: "0.5px",
+};
+
+const buttonStyle = {
+  letterSpacing: "0.3px",
+};
+
+if (typeof document !== "undefined") {
+  const styleEl = document.createElement("style");
+  styleEl.textContent = `
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+  `;
+  if (!document.head.querySelector("[data-welcome-styles]")) {
+    styleEl.setAttribute("data-welcome-styles", "true");
+    document.head.appendChild(styleEl);
+  }
+}
