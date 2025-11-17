@@ -1,0 +1,109 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+:root{
+  --bg: #0b1020;
+  --card: #10162b;
+  --muted: #8b93a7;
+  --text: #eaf0ff;
+  --primary: #4c8dff;
+  --accent: #ffb84c;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --ring: rgba(76,141,255,.35);
+}
+
+body {
+  background: radial-gradient(1200px 600px at 20% -20%, #223056 0%, #0b1020 60%);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.container {
+  width: 100%;
+  max-width: 520px;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: stretch;
+  background: linear-gradient(180deg, #121a31, #0d1326);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+  backdrop-filter: blur(6px);
+}
+
+.btn {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .06s ease, box-shadow .15s ease, background .2s ease;
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+
+.btn:active { transform: translateY(1px) scale(.99); }
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #161d36;
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.btn-danger { background: var(--danger); color:#fff; }
+.btn-success { background: var(--success); color:#08120c; }
+
+input, textarea {
+  width: 100%;
+  background: #0f162f;
+  color: var(--text);
+  padding: 12px 14px;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  outline: none;
+  transition: box-shadow .2s ease, border-color .2s ease;
+}
+
+input:focus, textarea:focus {
+  box-shadow: 0 0 0 6px var(--ring);
+  border-color: var(--primary);
+}
+
+.scroll-area {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.scroll-area::-webkit-scrollbar { width: 10px; }
+.scroll-area::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #34406b, #233158);
+  border-radius: 8px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  background: #172044;
+  color: var(--accent);
+  border: 1px solid rgba(255,255,255,.06);
+}

@@ -1,0 +1,54 @@
+import React, { createContext, useContext, useEffect, useState } from "react";
+import api from "../api";
+
+const AuthContext = createContext();
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(true);
+
+  // URL'den token'ı yakala (?token=...)
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get("token");
+    if (token) {
+      localStorage.setItem("auth_token", token);
+      // URL'i temizle
+      url.searchParams.delete("token");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
+
+  // token varsa /me ile kullanıcıyı doğrula
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setChecking(false);
+      return;
+    }
+    (async () => {
+      try {
+        const { data } = await api.get("/api/auth/me");
+        if (data?.authenticated) setUser(data.user);
+        else setUser(null);
+      } catch (e) {
+        setUser(null);
+      } finally {
+        setChecking(false);
+      }
+    })();
+  }, []);
+
+  const logout = () => {
+    localStorage.removeItem("auth_token");
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, checking, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth = () => useContext(AuthContext);
