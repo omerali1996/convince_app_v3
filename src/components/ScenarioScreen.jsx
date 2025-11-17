@@ -75,6 +75,7 @@ export default function ScenariosScreen() {
                     <button
                       onClick={() => setExpanded(true)}
                       style={readMoreBtn}
+                      className="btn btn-secondary"
                     >
                       Daha fazla göster ↓
                     </button>
@@ -130,8 +131,8 @@ const grid = {
   minHeight: 360,
 };
 
-/* Mobile ekranlarda tek sütun */
-if (window.innerWidth < 768) {
+/* Mobile tek sütun */
+if (typeof window !== "undefined" && window.innerWidth < 768) {
   grid.gridTemplateColumns = "1fr";
 }
 
@@ -148,7 +149,7 @@ const detailCol = { minHeight: 360 };
 const detailCard = {
   height: "100%",
   padding: 16,
-  background: "#0f162f",
+  background: "var(--card)",
   borderRadius: 16,
   border: "1px solid rgba(255,255,255,.06)",
   boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
@@ -191,13 +192,9 @@ const storyText = {
 };
 
 const readMoreBtn = {
-  marginTop: 6,
-  background: "none",
-  border: "none",
-  color: "#ffb84c",
-  cursor: "pointer",
+  marginTop: 8,
   fontSize: 14,
-  fontWeight: 500,
+  fontWeight: 600,
   alignSelf: "flex-start",
 };
 
@@ -225,8 +222,6 @@ const scenarioBtn = (s, preview) => ({
   borderRadius: 10,
   transition: "all .2s ease",
   cursor: "pointer",
-  color: "white",
+  color: "var(--text)",
   fontWeight: preview?.id === s.id ? 600 : 400,
 });
-
-
