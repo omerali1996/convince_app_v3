@@ -115,8 +115,8 @@ Hazırsan, oyun başlasın. 🧠💥`;
         style={card}
       >
         {isTyping && (
-          <button onClick={handleSkip} className="ws-skipBtn" style={skipBtn} title="Yazıyı atla">
-            Skip &rsaquo;
+          <button onClick={handleSkip} className="ws-skipBtn btn btn-secondary" style={skipBtn} title="Yazıyı atla">
+            Skip ›
           </button>
         )}
 
@@ -129,22 +129,22 @@ Hazırsan, oyun başlasın. 🧠💥`;
           Müzakere.0
         </motion.h1>
 
-        {/* --- AUTH BAR ADDED --- */}
+        {/* AUTH BAR */}
         <div style={authBar}>
           {checking ? (
-            <span style={{ opacity: 0.8 }}>Giriş doğrulanıyor…</span>
+            <span style={{ opacity: 0.85 }}>Giriş doğrulanıyor…</span>
           ) : user ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {user.picture && (
                 <img src={user.picture} alt="pp" width={28} height={28} style={{ borderRadius: "50%" }} />
               )}
               <span style={{ fontWeight: 600 }}>{user.name}</span>
-              <button onClick={logout} style={logoutBtn}>
+              <button onClick={logout} className="btn btn-secondary">
                 Çıkış
               </button>
             </div>
           ) : (
-            <button onClick={loginWithGoogle} style={providerBtn}>
+            <button onClick={loginWithGoogle} className="btn btn-secondary">
               <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Google ile Giriş
             </button>
           )}
@@ -163,10 +163,10 @@ Hazırsan, oyun başlasın. 🧠💥`;
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             onClick={handleStart}
-            className="ws-startBtn"
+            className="ws-startBtn btn btn-primary"
             style={buttonStyle}
-            whileHover={{ scale: 1.05, boxShadow: "0 6px 16px rgba(255, 190, 92, 0.3)" }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
           >
             {user ? "Oynamaya Başla" : "Misafir Oyna"}
           </motion.button>
@@ -228,20 +228,19 @@ const wrap = {
   alignItems: "center",
   justifyContent: "center",
   minHeight: "100vh",
-  background: "radial-gradient(circle at center, #0f162f, #0a0f1f)",
   padding: "20px",
 };
 
 const card = {
   textAlign: "center",
   padding: "40px 32px",
-  background: "rgba(15, 22, 47, 0.95)",
+  background: "var(--card)",
   borderRadius: 20,
   border: "1px solid rgba(255,255,255,.06)",
-  boxShadow: "0 8px 24px rgba(0,0,0,.4)",
+  boxShadow: "0 8px 24px rgba(0,0,0,.35)",
   maxWidth: 600,
   width: "90%",
-  backdropFilter: "blur(10px)",
+  backdropFilter: "blur(6px)",
   position: "relative",
 };
 
@@ -249,19 +248,12 @@ const skipBtn = {
   position: "absolute",
   bottom: 12,
   right: 12,
-  background: "transparent",
-  border: "1px solid rgba(255,255,255,0.25)",
-  color: "rgba(255,255,255,0.85)",
-  padding: "6px 10px",
   borderRadius: 10,
-  cursor: "pointer",
   fontSize: 12,
   letterSpacing: "0.3px",
-  transition: "all .2s ease",
-  zIndex: 2,
+  zIndex: 2
 };
 
-/* --- ADDED AUTH BAR OLD STYLE LOOKING --- */
 const authBar = {
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(255,255,255,0.08)",
@@ -274,31 +266,12 @@ const authBar = {
   gap: 10,
 };
 
-const providerBtn = {
-  background: "#161d36",
-  border: "1px solid rgba(255,255,255,.08)",
-  color: "white",
-  borderRadius: 10,
-  padding: "10px 12px",
-  cursor: "pointer",
-  fontWeight: 600,
-};
-
-const logoutBtn = {
-  background: "#2a354f",
-  border: "1px solid rgba(255,255,255,.1)",
-  borderRadius: 10,
-  padding: "6px 10px",
-  cursor: "pointer",
-  color: "#eaf0ff",
-  fontWeight: 600,
-};
-
 const textContainer = { marginBottom: 32 };
 
 const subtitle = {
   fontSize: 16,
-  color: "rgba(255,255,255,0.85)",
+  color: "var(--text)",
+  opacity: 0.9,
   lineHeight: 1.8,
   minHeight: 360,
   textAlign: "left",
@@ -310,7 +283,7 @@ const cursor = {
   display: "inline-block",
   width: "2px",
   height: "1.2em",
-  backgroundColor: "#ffbe5c",
+  backgroundColor: "var(--accent)",
   marginLeft: "2px",
   animation: "blink 1s infinite",
   verticalAlign: "middle",
@@ -319,22 +292,27 @@ const cursor = {
 const title = {
   fontSize: 32,
   marginBottom: 24,
-  color: "#fff",
+  color: "var(--text)",
   fontWeight: 600,
   letterSpacing: "0.5px",
 };
 
 const buttonStyle = {
-  background: "linear-gradient(135deg, #ffbe5c, #ff9d4c)",
-  border: "none",
-  color: "#1a1a1a",
-  fontWeight: 700,
-  padding: "14px 36px",
-  borderRadius: 12,
-  cursor: "pointer",
-  fontSize: 17,
-  boxShadow: "0 4px 12px rgba(255, 190, 92, 0.2)",
-  transition: "all 0.2s ease",
-  letterSpacing: "0.5px",
-  textTransform: "uppercase",
+  letterSpacing: "0.3px"
 };
+
+// globale tek seferlik blink keyframes
+if (typeof document !== "undefined") {
+  const styleEl = document.createElement("style");
+  styleEl.textContent = `
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+  `;
+  if (!document.head.querySelector('[data-welcome-styles]')) {
+    styleEl.setAttribute("data-welcome-styles", "true");
+    document.head.appendChild(styleEl);
+  }
+}
