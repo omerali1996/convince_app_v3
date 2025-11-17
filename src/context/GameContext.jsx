@@ -1,5 +1,6 @@
+// context/GameContext.jsx
 import React, { createContext, useContext, useState } from "react";
-import api from "../api";
+import api, { BACKEND_URL } from "../api";
 
 const GameContext = createContext();
 
@@ -13,14 +14,27 @@ export function GameProvider({ children }) {
   const startGame = () => setScreen("scenarios");
 
   const fetchScenarios = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
+      // 1) Normal istek (token varsa interceptor ekler)
       const res = await api.get("/api/scenarios");
       setScenarios(res.data || []);
-    } catch (e) {
-      console.error(e);
-      setError("Senaryolar yüklenemedi.");
+    } catch (e1) {
+      // 2) Misafir fallback: token/credential olmadan public dene
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/scenarios`, {
+          method: "GET",
+          credentials: "omit",
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error("Public fetch failed");
+        const data = await res.json();
+        setScenarios(data || []);
+      } catch (e2) {
+        console.error("Scenarios fetch failed:", e1?.message || e1, e2?.message || e2);
+        setError("Senaryolar yüklenemedi.");
+      }
     } finally {
       setLoading(false);
     }
