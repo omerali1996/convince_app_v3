@@ -93,7 +93,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
     };
   }, []);
 
-  // Misafir akışı: önce senaryoları çek, sonra geç
+  // Misafir akışı
   const handleGuestStart = async () => {
     stopKeySound();
     try {
@@ -143,24 +143,24 @@ Hazırsan, oyun başlasın. 🧠💥`;
         <div style={authBar}>
           {checking ? (
             <span style={{ opacity: 0.85 }}>Giriş doğrulanıyor…</span>
-          ) : {user ? (
-  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-    {user.picture && (
-      <img
-        src={user.picture}
-        alt="pp"
-        width={28}
-        height={28}
-        style={{ borderRadius: "50%" }}
-      />
-    )}
-    <span style={{ fontWeight: 600 }}>{user.name}</span>
-    <button onClick={logout} className="btn btn-secondary">
-      Çıkış
-    </button>
-  </div>   {/* ← EKSİK OLAN KAPAMA BURAYA EKLENDİ */}
-) : null}
-
+          ) : user ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {user.picture && (
+                <img
+                  src={user.picture}
+                  alt="pp"
+                  width={28}
+                  height={28}
+                  style={{ borderRadius: "50%" }}
+                />
+              )}
+              <span style={{ fontWeight: 600 }}>{user.name}</span>
+              <button onClick={logout} className="btn btn-secondary">
+                Çıkış
+              </button>
+            </div>
+          ) : null}
+        </div>
 
         <div className="ws-textContainer" style={textContainer}>
           <div className="ws-subtitle" style={subtitle}>
@@ -169,7 +169,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
           </div>
         </div>
 
-        {/* Aksiyonlar: yazı akışından sonra aşağıdan kayarak gelsin */}
+        {/* Aksiyonlar */}
         {showActions && (
           <motion.div
             initial={{ y: 28, opacity: 0 }}
@@ -210,7 +210,6 @@ Hazırsan, oyun başlasın. 🧠💥`;
 
 /* ---------- Google "G" inline SVG ---------- */
 function GoogleG({ size = 18 }) {
-  // Google’ın çok renkli “G” işareti
   return (
     <svg
       width={size}
@@ -358,5 +357,3 @@ if (typeof document !== "undefined") {
     document.head.appendChild(styleEl);
   }
 }
-
-
