@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const BACKEND_URL =
-  process.env.REACT_APP_BACKEND_URL || "https://convince-app-v3-1.onrender.com";
+  process.env.REACT_APP_BACKEND_URL || "https://convince-app-v3.onrender.com";
 
 const api = axios.create({
   baseURL: BACKEND_URL,
@@ -18,3 +18,4 @@ api.interceptors.request.use((config) => {
 });
 
 export default api;
+
