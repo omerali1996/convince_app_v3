@@ -12,38 +12,19 @@ export function GameProvider({ children }) {
 
   const startGame = useCallback(() => setScreen("scenarios"), []);
 
-  const fetchScenarios = useCallback(async () => {
+    const fetchScenarios = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // 1) Normal (auth'lu) dene
       const res = await api.get("/api/scenarios");
       setScenarios(res.data || []);
-      return true;
     } catch (e) {
-      // 2) 401/403 ise misafir/public fallback dene
-      const status = e?.response?.status;
-      if (status === 401 || status === 403) {
-        try {
-          const pub = await api.get("/api/scenarios");
-          setScenarios(pub.data || []);
-          return true;
-        } catch (e2) {
-          console.error("Public fetch failed:", e2);
-          setError("Senaryolar yüklenemedi.");
-          setScenarios([]);
-          return false;
-        }
-      }
-      console.error("Scenarios fetch failed:", e);
+      console.error(e);
       setError("Senaryolar yüklenemedi.");
-      setScenarios([]);
-      return false;
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   const selectScenario = useCallback((scenario) => {
     setCurrentScenario(scenario);
@@ -77,4 +58,5 @@ export function GameProvider({ children }) {
 }
 
 export const useGame = () => useContext(GameContext);
+
 
