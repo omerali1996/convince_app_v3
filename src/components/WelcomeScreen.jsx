@@ -158,11 +158,6 @@ Hazırsan, oyun başlasın. 🧠💥`;
               <button onClick={logout} className="btn btn-secondary">
                 Çıkış
               </button>
-            </div>
-          ) : (
-            <span style={{ opacity: 0.85 }}>Misafir veya Google ile devam edebilirsin</span>
-          )}
-        </div>
 
         <div className="ws-textContainer" style={textContainer}>
           <div className="ws-subtitle" style={subtitle}>
@@ -360,3 +355,4 @@ if (typeof document !== "undefined") {
     document.head.appendChild(styleEl);
   }
 }
+
