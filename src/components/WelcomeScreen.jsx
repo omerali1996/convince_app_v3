@@ -34,12 +34,13 @@ Hazırsan, oyun başlasın. 🧠💥`;
   const playKeySound = () => {
     const a = keyAudioRef.current;
     if (!a) return;
+
     const now = performance.now();
     if (now < nextTickRef.current) return;
     if (!a.paused) return;
+
     try {
       a.volume = 0.06;
-      a.playbackRate = 1.0;
       a.currentTime = 0;
       a.play().catch(() => {});
       nextTickRef.current = now + CLICK_INTERVAL;
@@ -115,7 +116,12 @@ Hazırsan, oyun başlasın. 🧠💥`;
         style={card}
       >
         {isTyping && (
-          <button onClick={handleSkip} className="ws-skipBtn btn btn-secondary" style={skipBtn} title="Yazıyı atla">
+          <button
+            onClick={handleSkip}
+            className="ws-skipBtn btn btn-secondary"
+            style={skipBtn}
+            title="Yazıyı atla"
+          >
             Skip ›
           </button>
         )}
@@ -136,7 +142,13 @@ Hazırsan, oyun başlasın. 🧠💥`;
           ) : user ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {user.picture && (
-                <img src={user.picture} alt="pp" width={28} height={28} style={{ borderRadius: "50%" }} />
+                <img
+                  src={user.picture}
+                  alt="pp"
+                  width={28}
+                  height={28}
+                  style={{ borderRadius: "50%" }}
+                />
               )}
               <span style={{ fontWeight: 600 }}>{user.name}</span>
               <button onClick={logout} className="btn btn-secondary">
@@ -251,7 +263,7 @@ const skipBtn = {
   borderRadius: 10,
   fontSize: 12,
   letterSpacing: "0.3px",
-  zIndex: 2
+  zIndex: 2,
 };
 
 const authBar = {
@@ -298,10 +310,9 @@ const title = {
 };
 
 const buttonStyle = {
-  letterSpacing: "0.3px"
+  letterSpacing: "0.3px",
 };
 
-// globale tek seferlik blink keyframes
 if (typeof document !== "undefined") {
   const styleEl = document.createElement("style");
   styleEl.textContent = `
@@ -311,7 +322,7 @@ if (typeof document !== "undefined") {
     }
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
   `;
-  if (!document.head.querySelector('[data-welcome-styles]')) {
+  if (!document.head.querySelector("[data-welcome-styles]")) {
     styleEl.setAttribute("data-welcome-styles", "true");
     document.head.appendChild(styleEl);
   }
