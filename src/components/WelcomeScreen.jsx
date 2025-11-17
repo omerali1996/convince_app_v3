@@ -7,7 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { BACKEND_URL } from "../api";
 
 export default function WelcomeScreen() {
-  const { startGame } = useGame();
+  const { startGame, fetchScenarios } = useGame();
   const { user, checking, logout } = useAuth();
 
   const [displayedText, setDisplayedText] = useState("");
@@ -93,15 +93,30 @@ Hazırsan, oyun başlasın. 🧠💥`;
       clearInterval(typingIntervalRef.current);
       stopKeySound();
     };
-  }, []);
+  }, []); // mount
 
-  const handleStart = () => {
+  // GUEST: önce senaryoları çek, sonra ekran değiştir
+  const handleGuestStart = async () => {
     stopKeySound();
-    startGame();
+    try {
+      await fetchScenarios();
+    } finally {
+      startGame();
+    }
   };
 
   const loginWithGoogle = () => {
     window.location.href = `${BACKEND_URL}/api/auth/login/google`;
+  };
+
+  // CTA animasyonları
+  const ctaVariants = {
+    hidden: { y: 40, opacity: 0 },
+    show: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 24, duration: 0.5 }
+    }
   };
 
   return (
@@ -151,14 +166,10 @@ Hazırsan, oyun başlasın. 🧠💥`;
                 />
               )}
               <span style={{ fontWeight: 600 }}>{user.name}</span>
-              <button onClick={logout} className="btn btn-secondary">
-                Çıkış
-              </button>
+              <button onClick={logout} className="btn btn-secondary">Çıkış</button>
             </div>
           ) : (
-            <button onClick={loginWithGoogle} className="btn btn-secondary">
-              <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Google ile Giriş
-            </button>
+            <span style={{ opacity: 0.9 }}>Devam etmek için aşağıdan bir seçenek seçin</span>
           )}
         </div>
 
@@ -169,19 +180,57 @@ Hazırsan, oyun başlasın. 🧠💥`;
           </div>
         </div>
 
+        {/* ALT ALTA KAYARAK GELEN CTA BÖLÜMÜ */}
         {showButton && (
-          <motion.button
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            onClick={handleStart}
-            className="ws-startBtn btn btn-primary"
-            style={buttonStyle}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.98 }}
+          <motion.div
+            initial="hidden"
+            animate="show"
+            style={ctaStack}
           >
-            {user ? "Oynamaya Başla" : "Misafir Oyna"}
-          </motion.button>
+            {user ? (
+              <motion.button
+                variants={ctaVariants}
+                onClick={handleGuestStart}
+                className="ws-startBtn btn btn-primary"
+                style={{ ...buttonStyle, width: "100%" }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Oynamaya Başla
+              </motion.button>
+            ) : (
+              <>
+                <motion.button
+                  variants={ctaVariants}
+                  onClick={loginWithGoogle}
+                  className="btn btn-secondary"
+                  style={ctaBtn}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <img
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                    alt="Google"
+                    width={16}
+                    height={16}
+                    style={{ marginRight: 8 }}
+                  />
+                  Google ile Giriş
+                </motion.button>
+
+                <motion.button
+                  variants={ctaVariants}
+                  onClick={handleGuestStart}
+                  className="ws-startBtn btn btn-primary"
+                  style={ctaBtn}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Misafir Oyna
+                </motion.button>
+              </>
+            )}
+          </motion.div>
         )}
       </motion.div>
     </div>
@@ -209,12 +258,6 @@ const responsiveStyles = `
 
     .ws-textContainer { margin-bottom: 22px !important; }
 
-    .ws-startBtn {
-      width: 100% !important;
-      font-size: 16px !important;
-      padding: 12px 14px !important;
-    }
-
     .ws-skipBtn {
       bottom: 8px !important;
       right: 8px !important;
@@ -224,9 +267,7 @@ const responsiveStyles = `
   }
 
   @media (max-width: 420px) {
-    .ws-card {
-      padding: 24px 10px 52px !important;
-    }
+    .ws-card { padding: 24px 10px 52px !important; }
     .ws-subtitle {
       font-size: 14px !important;
       line-height: 1.6 !important;
@@ -309,9 +350,20 @@ const title = {
   letterSpacing: "0.5px",
 };
 
-const buttonStyle = {
-  letterSpacing: "0.3px",
+const ctaStack = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
 };
+
+const ctaBtn = {
+  width: "100%",
+  fontSize: 16,
+  padding: "12px 14px",
+  borderRadius: 12,
+};
+
+const buttonStyle = { letterSpacing: "0.3px" };
 
 if (typeof document !== "undefined") {
   const styleEl = document.createElement("style");
