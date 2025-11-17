@@ -1,3 +1,5 @@
+// "use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useGame } from "../context/GameContext";
@@ -13,7 +15,8 @@ export default function WelcomeScreen() {
 
   const keyAudioRef = useRef(null);
   const nextTickRef = useRef(0);
-  const CLICK_INTERVAL = 180; // ms
+  const CLICK_INTERVAL = 180;
+
   const startTimeoutRef = useRef(null);
   const typingIntervalRef = useRef(null);
 
@@ -110,8 +113,8 @@ Hazırsan, oyun başlasın. 🧠💥`;
     startGame();
   };
 
-  const loginWith = (provider) => {
-    window.location.href = `${BACKEND_URL}/api/auth/login/${provider}`;
+  const loginWithGoogle = () => {
+    window.location.href = `${BACKEND_URL}/api/auth/login/google`;
   };
 
   return (
@@ -127,7 +130,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
       >
         {isTyping && (
           <button onClick={handleSkip} className="ws-skipBtn" style={skipBtn} title="Yazıyı atla">
-            Skip ›
+            Skip &rsaquo;
           </button>
         )}
 
@@ -155,12 +158,8 @@ Hazırsan, oyun başlasın. 🧠💥`;
             </div>
           ) : (
             <div style={providersRow}>
-              <button onClick={() => loginWith("google")} className="btn btn-secondary" style={providerBtn}>
+              <button onClick={loginWithGoogle} className="btn btn-secondary" style={providerBtn}>
                 <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Google ile Giriş
-              </button>
-              {/* İstersen Facebook'u da açık bırak */}
-              <button onClick={() => loginWith("facebook")} className="btn btn-secondary" style={providerBtn}>
-                <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Facebook ile Giriş
               </button>
             </div>
           )}
@@ -192,27 +191,33 @@ Hazırsan, oyun başlasın. 🧠💥`;
   );
 }
 
+/* ---------- Responsive Styles ---------- */
 const responsiveStyles = `
   @media (max-width: 768px) {
     .ws-wrap { padding: 10px !important; }
+
     .ws-card {
       max-width: 100% !important;
       width: 100% !important;
       padding: 28px 14px 48px !important;
       border-radius: 16px !important;
     }
+
     .ws-subtitle {
       font-size: 15px !important;
       line-height: 1.65 !important;
       min-height: 44vh !important;
       letter-spacing: 0.1px !important;
     }
+
     .ws-textContainer { margin-bottom: 22px !important; }
+
     .ws-startBtn {
       width: 100% !important;
       font-size: 16px !important;
       padding: 12px 14px !important;
     }
+
     .ws-skipBtn {
       bottom: 8px !important;
       right: 8px !important;
@@ -220,8 +225,11 @@ const responsiveStyles = `
       font-size: 12px !important;
     }
   }
+
   @media (max-width: 420px) {
-    .ws-card { padding: 24px 10px 44px !important; }
+    .ws-card {
+      padding: 24px 10px 44px !important;
+    }
     .ws-subtitle {
       font-size: 14px !important;
       line-height: 1.6 !important;
