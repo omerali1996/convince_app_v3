@@ -345,7 +345,7 @@ const bubbleBase = {
 const userMessage = {
   ...bubbleBase,
   alignSelf: "flex-end",
-  background: "linear-gradient(180deg, var(--accent), #ffb84c)",
+  background: "linear-gradient(180deg, var(--accent), var(--accent-2))",
   color: "#101010",
   borderTopRightRadius: 4,
 };
