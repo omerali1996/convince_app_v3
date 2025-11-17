@@ -1,6 +1,6 @@
 import os
 import time
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 from flask import Flask, request, jsonify, redirect
 from openai import OpenAI
@@ -8,18 +8,38 @@ from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 import jwt
 
-from scenarios import scenarios  # senin senaryoların
+from scenarios import scenarios
 
 app = Flask(__name__)
 
-# ---- Config & CORS ----
-FRONTEND_URL = os.environ.get("FRONTEND_URL")
+# ---- Config ----
+FRONTEND_URL = os.environ.get("FRONTEND_URL")  # asla query içermesin!
 BACKEND_URL = os.environ.get("BACKEND_URL")
-app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")  # Flask session için
-JWT_SECRET = os.environ.get("JWT_SECRET")  # JWT imzası
+app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
+JWT_SECRET = os.environ.get("JWT_SECRET")
 
-# CORS: frontenden API çağrıları için
-CORS(app, origins=[FRONTEND_URL], supports_credentials=True)
+# Origin'i FRONTEND_URL'den otomatik çıkar (scheme://host[:port])
+def extract_origin(url):
+  if not url:
+    return None
+  u = urlparse(url)
+  return f"{u.scheme}://{u.netloc}"
+
+FRONTEND_ORIGIN = extract_origin(FRONTEND_URL)
+
+# ---- CORS (sadece /api/*) ----
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [FRONTEND_ORIGIN] if FRONTEND_ORIGIN else "*",
+            "supports_credentials": True,
+            "allow_headers": ["Content-Type", "Authorization"],
+            "expose_headers": ["Authorization"],
+            "methods": ["GET", "POST", "OPTIONS"]
+        }
+    }
+)
 
 # ---- OpenAI ----
 API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -36,10 +56,7 @@ oauth.register(
     client_id=os.environ.get("GOOGLE_CLIENT_ID"),
     client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-    client_kwargs={
-        "scope": "openid email profile",
-        "prompt": "consent"
-    },
+    client_kwargs={"scope": "openid email profile", "prompt": "consent"},
 )
 
 # Facebook
@@ -55,9 +72,6 @@ oauth.register(
 
 # ---- Helpers ----
 def issue_jwt(user):
-    """
-    user: dict -> {"sub", "name", "email", "picture", "provider"}
-    """
     now = int(time.time())
     payload = {
         "sub": user.get("sub"),
@@ -74,7 +88,6 @@ def issue_jwt(user):
     return token
 
 def current_user_from_auth_header():
-    """Authorization: Bearer <token>"""
     auth = request.headers.get("Authorization", "")
     if not auth.lower().startswith("bearer "):
         return None
@@ -95,16 +108,13 @@ def auth_login(provider):
     if provider == "google":
         return oauth.google.authorize_redirect(redirect_uri)
     else:
-        # Facebook ayrıca display param vs. alabilir, basit tutuyoruz
         return oauth.facebook.authorize_redirect(redirect_uri)
 
 @app.route("/api/auth/callback/<provider>")
 def auth_callback(provider):
     if provider == "google":
         token = oauth.google.authorize_access_token()
-        # Google userinfo (OpenID)
         userinfo = oauth.google.parse_id_token(token)
-        # Yedek: bazı durumlarda 'userinfo' endpoint:
         if not userinfo:
             resp = oauth.google.get("userinfo")
             userinfo = resp.json()
@@ -117,14 +127,13 @@ def auth_callback(provider):
         }
     elif provider == "facebook":
         token = oauth.facebook.authorize_access_token()
-        # Facebook profili
         resp = oauth.facebook.get("me", params={"fields": "id,name,email,picture.type(large)"})
         data = resp.json()
         pic = (data.get("picture") or {}).get("data") or {}
         user = {
             "sub": f"facebook:{data.get('id')}",
             "name": data.get("name"),
-            "email": data.get("email"),  # email izin verilmemişse None olabilir
+            "email": data.get("email"),
             "picture": pic.get("url"),
             "provider": "facebook",
         }
@@ -132,8 +141,6 @@ def auth_callback(provider):
         return jsonify({"error": "Unsupported provider"}), 400
 
     jwt_token = issue_jwt(user)
-
-    # Frontend'e token ile geri dön
     to = f"{FRONTEND_URL}?{urlencode({'token': jwt_token})}"
     return redirect(to, code=302)
 
@@ -144,7 +151,7 @@ def auth_me():
         return jsonify({"authenticated": False}), 401
     return jsonify({"authenticated": True, "user": user})
 
-# ---- Business endpoints (mevcutlar) ----
+# ---- Business endpoints ----
 @app.route("/api/scenarios", methods=["GET"])
 def get_scenarios():
     simplified_scenarios = []
@@ -162,7 +169,7 @@ def get_scenarios():
 
 @app.route("/api/ask", methods=["POST"])
 def ask():
-    data = request.json
+    data = request.json or {}
     user_input = data.get("user_input")
     scenario_id = data.get("scenario_id")
     history = data.get("history", [])
@@ -190,12 +197,11 @@ def ask():
 
         messages = [{"role": "system", "content": system_content}]
 
-        if history:
-            for m in history:
-                if m.get("sender") == "user":
-                    messages.append({"role": "user", "content": m.get("text", "")})
-                else:
-                    messages.append({"role": "assistant", "content": m.get("text", "")})
+        for m in history:
+            if m.get("sender") == "user":
+                messages.append({"role": "user", "content": m.get("text", "")})
+            else:
+                messages.append({"role": "assistant", "content": m.get("text", "")})
 
         messages.append({"role": "user", "content": user_input})
 
@@ -212,4 +218,3 @@ def ask():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
