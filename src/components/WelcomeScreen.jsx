@@ -1,3 +1,4 @@
+// WelcomeScreen.jsx
 // "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -34,11 +35,9 @@ Hazırsan, oyun başlasın. 🧠💥`;
   const playKeySound = () => {
     const a = keyAudioRef.current;
     if (!a) return;
-
     const now = performance.now();
     if (now < nextTickRef.current) return;
     if (!a.paused) return;
-
     try {
       a.volume = 0.06;
       a.currentTime = 0;
@@ -95,7 +94,8 @@ Hazırsan, oyun başlasın. 🧠💥`;
     };
   }, []);
 
-  const handleStart = () => {
+  const handleStartGuest = () => {
+    // Misafir başlat → senaryolar ekranına geç
     stopKeySound();
     startGame();
   };
@@ -155,18 +155,37 @@ Hazırsan, oyun başlasın. 🧠💥`;
                 Çıkış
               </button>
             </div>
-          ) : (<button onClick={loginWithGoogle}
-              className="btn btn-secondary"
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
+          ) : (
+            // ⬇️ İki buton alt alta ve alttan kayarak gelsin
+            <motion.div
+              initial={{ y: 24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
+              style={stackButtons}
             >
-              <img
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                alt="Google"
-                width={16}
-                height={16}
-              />
-              <span>Google ile giriş yap</span>
-              </button>              
+              <button
+                onClick={loginWithGoogle}
+                className="btn btn-secondary"
+                style={stackBtnItem}
+              >
+                <img
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="Google"
+                  width={16}
+                  height={16}
+                  style={{ marginRight: 8 }}
+                />
+                Google ile giriş yap
+              </button>
+
+              <button
+                onClick={handleStartGuest}
+                className="btn btn-primary"
+                style={stackBtnItem}
+              >
+                Misafir Oyna
+              </button>
+            </motion.div>
           )}
         </div>
 
@@ -177,18 +196,18 @@ Hazırsan, oyun başlasın. 🧠💥`;
           </div>
         </div>
 
-        {showButton && (
+        {showButton && user && (
           <motion.button
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            onClick={handleStart}
+            onClick={handleStartGuest}
             className="ws-startBtn btn btn-primary"
             style={buttonStyle}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
           >
-            {user ? "Oynamaya Başla" : "Misafir Oyna"}
+            Oynamaya Başla
           </motion.button>
         )}
       </motion.div>
@@ -284,6 +303,20 @@ const authBar = {
   alignItems: "center",
   justifyContent: "center",
   gap: 10,
+  width: "100%",
+};
+
+const stackButtons = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+  width: "100%",
+  maxWidth: 360,
+};
+
+const stackBtnItem = {
+  width: "100%",
+  justifyContent: "center",
 };
 
 const textContainer = { marginBottom: 32 };
@@ -335,6 +368,3 @@ if (typeof document !== "undefined") {
     document.head.appendChild(styleEl);
   }
 }
-
-
-
