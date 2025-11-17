@@ -155,15 +155,18 @@ Hazırsan, oyun başlasın. 🧠💥`;
                 Çıkış
               </button>
             </div>
-          ) : (
-            <button onClick={loginWithGoogle} className="btn btn-secondary flex items-center gap-2">
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
-              className="w-5 h-5"
-            />
-            Google ile giriş yap
-          </button>
+          ) : (<button
+                onClick={loginWithGoogle}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                <img
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="Google"
+                  className="w-4 h-4"   // <— burada boyut küçüldü (16px)
+                  style={{ marginTop: 1 }}
+                />
+                <span style={{ fontSize: 16 }}>Google ile giriş yap</span>
+              </button>              
           )}
         </div>
 
@@ -332,4 +335,5 @@ if (typeof document !== "undefined") {
     document.head.appendChild(styleEl);
   }
 }
+
 
