@@ -12,7 +12,7 @@ export default function WelcomeScreen() {
 
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [showButton, setShowButton] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   const keyAudioRef = useRef(null);
   const nextTickRef = useRef(0);
@@ -34,11 +34,9 @@ Hazırsan, oyun başlasın. 🧠💥`;
   const playKeySound = () => {
     const a = keyAudioRef.current;
     if (!a) return;
-
     const now = performance.now();
     if (now < nextTickRef.current) return;
     if (!a.paused) return;
-
     try {
       a.volume = 0.06;
       a.currentTime = 0;
@@ -62,7 +60,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
     stopKeySound();
     setDisplayedText(fullText);
     setIsTyping(false);
-    setShowButton(true);
+    setShowActions(true);
   };
 
   useEffect(() => {
@@ -83,7 +81,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
           clearInterval(typingIntervalRef.current);
           stopKeySound();
           setIsTyping(false);
-          setTimeout(() => setShowButton(true), 500);
+          setTimeout(() => setShowActions(true), 500);
         }
       }, 50);
     }, 1200);
@@ -95,17 +93,17 @@ Hazırsan, oyun başlasın. 🧠💥`;
     };
   }, []);
 
-  // ✅ Misafir: önce senaryoları çek, sonra ekrana geç
-  const handleStart = async () => {
+  // Misafir akışı: önce senaryoları çek, sonra geç
+  const handleGuestStart = async () => {
     stopKeySound();
     try {
-      await fetchScenarios(); // auth yoksa GameContext public fallback'i dener
+      await fetchScenarios();
     } finally {
-      startGame(); // her durumda scenariosa geç
+      startGame();
     }
   };
 
-  // ✅ Google login tıklandığında backend'e yönlendir
+  // Google login
   const loginWithGoogle = () => {
     window.location.href = `${BACKEND_URL}/api/auth/login/google`;
   };
@@ -141,7 +139,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
           Müzakere.0
         </motion.h1>
 
-        {/* AUTH BAR */}
+        {/* Kullanıcı giriş yaptıysa küçük bar */}
         <div style={authBar}>
           {checking ? (
             <span style={{ opacity: 0.85 }}>Giriş doğrulanıyor…</span>
@@ -162,9 +160,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
               </button>
             </div>
           ) : (
-            <button onClick={loginWithGoogle} className="btn btn-secondary">
-              <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Google ile Giriş
-            </button>
+            <span style={{ opacity: 0.85 }}>Misafir veya Google ile devam edebilirsin</span>
           )}
         </div>
 
@@ -175,69 +171,76 @@ Hazırsan, oyun başlasın. 🧠💥`;
           </div>
         </div>
 
-        {showButton && (
-          <motion.button
-            initial={{ y: 20, opacity: 0 }}
+        {/* Aksiyonlar: yazı akışından sonra aşağıdan kayarak gelsin */}
+        {showActions && (
+          <motion.div
+            initial={{ y: 28, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            onClick={handleStart}
-            className="ws-startBtn btn btn-primary"
-            style={buttonStyle}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            style={actionsCol}
           >
-            {user ? "Oynamaya Başla" : "Misafir Oyna"}
-          </motion.button>
+            {!user && (
+              <button onClick={loginWithGoogle} className="btn btn-secondary" style={googleBtn}>
+                <GoogleG size={18} />
+                <span>Google ile giriş yap</span>
+              </button>
+            )}
+
+            {user ? (
+              <button
+                onClick={startGame}
+                className="btn btn-primary"
+                style={primaryFull}
+              >
+                Oynamaya Başla
+              </button>
+            ) : (
+              <button
+                onClick={handleGuestStart}
+                className="btn btn-primary"
+                style={primaryFull}
+              >
+                Misafir olarak oyna
+              </button>
+            )}
+          </motion.div>
         )}
       </motion.div>
     </div>
   );
 }
 
-/* ---------- Responsive Styles ---------- */
+/* ---------- Google "G" inline SVG ---------- */
+function GoogleG({ size = 18 }) {
+  // Google’ın çok renkli “G” işareti
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      aria-hidden="true"
+      style={{ display: "block" }}
+    >
+      <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.602 32.909 29.231 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C34.909 6.053 29.73 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20c10.494 0 19.09-7.594 19.09-20 0-1.341-.147-2.652-.479-3.917z"/>
+      <path fill="#FF3D00" d="M6.306 14.691l6.571 4.818C14.532 15.272 18.912 12 24 12c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C34.909 6.053 29.73 4 24 4c-7.938 0-14.754 4.632-17.694 10.691z"/>
+      <path fill="#4CAF50" d="M24 44c5.157 0 9.868-1.976 13.409-5.186l-6.19-5.238C29.22 35.131 26.769 36 24 36c-5.211 0-9.569-3.075-11.292-7.448l-6.51 5.017C9.095 39.37 16.034 44 24 44z"/>
+      <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.085 3.094-3.362 5.501-6.084 7.073l.001-.001 6.19 5.238C37.06 41.698 40 36.5 40 28c0-2.708-.153-4.73-.389-7.917z"/>
+    </svg>
+  );
+}
+
+/* ---------- Styles ---------- */
 const responsiveStyles = `
   @media (max-width: 768px) {
     .ws-wrap { padding: 10px !important; }
-
-    .ws-card {
-      max-width: 100% !important;
-      width: 100% !important;
-      padding: 28px 14px 56px !important;
-      border-radius: 16px !important;
-    }
-
-    .ws-subtitle {
-      font-size: 15px !important;
-      line-height: 1.65 !important;
-      min-height: 44vh !important;
-      letter-spacing: 0.1px !important;
-    }
-
+    .ws-card { max-width: 100% !important; width: 100% !important; padding: 28px 14px 56px !important; border-radius: 16px !important; }
+    .ws-subtitle { font-size: 15px !important; line-height: 1.65 !important; min-height: 44vh !important; letter-spacing: 0.1px !important; }
     .ws-textContainer { margin-bottom: 22px !important; }
-
-    .ws-startBtn {
-      width: 100% !important;
-      font-size: 16px !important;
-      padding: 12px 14px !important;
-    }
-
-    .ws-skipBtn {
-      bottom: 8px !important;
-      right: 8px !important;
-      padding: 6px 10px !important;
-      font-size: 12px !important;
-    }
+    .ws-skipBtn { bottom: 8px !important; right: 8px !important; padding: 6px 10px !important; font-size: 12px !important; }
   }
-
   @media (max-width: 420px) {
-    .ws-card {
-      padding: 24px 10px 52px !important;
-    }
-    .ws-subtitle {
-      font-size: 14px !important;
-      line-height: 1.6 !important;
-      min-height: 40vh !important;
-    }
+    .ws-card { padding: 24px 10px 52px !important; }
+    .ws-subtitle { font-size: 14px !important; line-height: 1.6 !important; min-height: 40vh !important; }
   }
 `;
 
@@ -284,7 +287,7 @@ const authBar = {
   gap: 10,
 };
 
-const textContainer = { marginBottom: 32 };
+const textContainer = { marginBottom: 18 };
 
 const subtitle = {
   fontSize: 16,
@@ -309,14 +312,38 @@ const cursor = {
 
 const title = {
   fontSize: 32,
-  marginBottom: 24,
+  marginBottom: 16,
   color: "var(--text)",
   fontWeight: 600,
   letterSpacing: "0.5px",
 };
 
-const buttonStyle = {
-  letterSpacing: "0.3px",
+const actionsCol = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+  marginTop: 8,
+};
+
+const googleBtn = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 10,
+  padding: "12px 14px",
+  borderRadius: 12,
+  width: "100%",
+  fontWeight: 600,
+  border: "1px solid rgba(255,255,255,.08)",
+  background: "#161d36",
+};
+
+const primaryFull = {
+  width: "100%",
+  padding: "12px 14px",
+  borderRadius: 12,
+  fontWeight: 700,
+  letterSpacing: ".3px",
 };
 
 if (typeof document !== "undefined") {
