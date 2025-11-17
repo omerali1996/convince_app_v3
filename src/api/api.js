@@ -1,12 +1,24 @@
 import axios from "axios";
 
-const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "https://convince-app-v3.onrender.com",
-  timeout: 10000,
+// Vercel/CRA için env: REACT_APP_BACKEND_URL
+export const BACKEND_URL =
+  process.env.REACT_APP_BACKEND_URL ||
+  "https://convince-app-v3.onrender.com";
+
+// Tek axios instance
+const api = axios.create({
+  baseURL: BACKEND_URL,
+  timeout: 15000,
 });
 
-export const fetchScenarios = () => API.get("/scenarios");
-export const askQuestion = (scenarioIndex, question) => 
-  API.post("/ask", { scenarioIndex, question });
+// Her isteğe otomatik Authorization ekle
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-
+export default api;
