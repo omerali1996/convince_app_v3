@@ -156,16 +156,9 @@ Hazırsan, oyun başlasın. 🧠💥`;
               </button>
             </div>
           ) : (
-                              <button onClick={loginWithGoogle} className="btn btn-secondary" style={stackBtnItem}>
-                    <img
-                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                      alt="Google"
-                      width={16}
-                      height={16}
-                      style={{ marginRight: 8 }}
-                    />
-                    Google ile giriş yap
-                  </button>
+            <button onClick={loginWithGoogle} className="btn btn-secondary">
+              <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Google ile Giriş
+            </button>
           )}
         </div>
 
