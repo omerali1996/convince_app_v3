@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 
 import WelcomeScreen from "./components/WelcomeScreen";
 import ScenariosScreen from "./components/ScenarioScreen";
-import GameScreen from "./components/GameScreen";
+import GameProvider from "./components/GameScreen";
 
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -58,3 +58,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+
