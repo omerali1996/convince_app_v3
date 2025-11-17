@@ -9,6 +9,7 @@ import { BACKEND_URL } from "../api";
 export default function WelcomeScreen() {
   const { startGame } = useGame();
   const { user, checking, logout } = useAuth();
+
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showButton, setShowButton] = useState(false);
@@ -55,14 +56,8 @@ Hazırsan, oyun başlasın. 🧠💥`;
   };
 
   const handleSkip = () => {
-    if (startTimeoutRef.current) {
-      clearTimeout(startTimeoutRef.current);
-      startTimeoutRef.current = null;
-    }
-    if (typingIntervalRef.current) {
-      clearInterval(typingIntervalRef.current);
-      typingIntervalRef.current = null;
-    }
+    clearTimeout(startTimeoutRef.current);
+    clearInterval(typingIntervalRef.current);
     stopKeySound();
     setDisplayedText(fullText);
     setIsTyping(false);
@@ -72,7 +67,6 @@ Hazırsan, oyun başlasın. 🧠💥`;
   useEffect(() => {
     keyAudioRef.current = new Audio("/sounds/mechanical-key.mp3");
     keyAudioRef.current.preload = "auto";
-    keyAudioRef.current.loop = false;
 
     startTimeoutRef.current = setTimeout(() => {
       setIsTyping(true);
@@ -85,26 +79,18 @@ Hazırsan, oyun başlasın. 🧠💥`;
           if (ch.trim() !== "" && ch !== "\n") playKeySound();
           index++;
         } else {
-          setIsTyping(false);
           clearInterval(typingIntervalRef.current);
-          typingIntervalRef.current = null;
           stopKeySound();
+          setIsTyping(false);
           setTimeout(() => setShowButton(true), 500);
         }
       }, 50);
     }, 1200);
 
     return () => {
-      if (startTimeoutRef.current) {
-        clearTimeout(startTimeoutRef.current);
-        startTimeoutRef.current = null;
-      }
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current);
-        typingIntervalRef.current = null;
-      }
+      clearTimeout(startTimeoutRef.current);
+      clearInterval(typingIntervalRef.current);
       stopKeySound();
-      keyAudioRef.current = null;
     };
   }, []);
 
@@ -143,6 +129,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
           Müzakere.0
         </motion.h1>
 
+        {/* --- AUTH BAR ADDED --- */}
         <div style={authBar}>
           {checking ? (
             <span style={{ opacity: 0.8 }}>Giriş doğrulanıyor…</span>
@@ -152,16 +139,14 @@ Hazırsan, oyun başlasın. 🧠💥`;
                 <img src={user.picture} alt="pp" width={28} height={28} style={{ borderRadius: "50%" }} />
               )}
               <span style={{ fontWeight: 600 }}>{user.name}</span>
-              <button onClick={logout} className="btn btn-secondary" style={logoutBtn}>
+              <button onClick={logout} style={logoutBtn}>
                 Çıkış
               </button>
             </div>
           ) : (
-            <div style={providersRow}>
-              <button onClick={loginWithGoogle} className="btn btn-secondary" style={providerBtn}>
-                <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Google ile Giriş
-              </button>
-            </div>
+            <button onClick={loginWithGoogle} style={providerBtn}>
+              <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Google ile Giriş
+            </button>
           )}
         </div>
 
@@ -276,14 +261,7 @@ const skipBtn = {
   zIndex: 2,
 };
 
-const title = {
-  fontSize: 32,
-  marginBottom: 24,
-  color: "#fff",
-  fontWeight: 600,
-  letterSpacing: "0.5px",
-};
-
+/* --- ADDED AUTH BAR OLD STYLE LOOKING --- */
 const authBar = {
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(255,255,255,0.08)",
@@ -294,13 +272,6 @@ const authBar = {
   alignItems: "center",
   justifyContent: "center",
   gap: 10,
-};
-
-const providersRow = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-  justifyContent: "center",
 };
 
 const providerBtn = {
@@ -343,6 +314,14 @@ const cursor = {
   marginLeft: "2px",
   animation: "blink 1s infinite",
   verticalAlign: "middle",
+};
+
+const title = {
+  fontSize: 32,
+  marginBottom: 24,
+  color: "#fff",
+  fontWeight: 600,
+  letterSpacing: "0.5px",
 };
 
 const buttonStyle = {
