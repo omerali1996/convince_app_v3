@@ -13,10 +13,10 @@ from scenarios import scenarios  # senin senaryoların
 app = Flask(__name__)
 
 # ---- Config & CORS ----
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:5000")
-app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "change-me")  # Flask session için
-JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-too")  # JWT imzası
+FRONTEND_URL = os.environ.get("FRONTEND_URL")
+BACKEND_URL = os.environ.get("BACKEND_URL")
+app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")  # Flask session için
+JWT_SECRET = os.environ.get("JWT_SECRET")  # JWT imzası
 
 # CORS: frontenden API çağrıları için
 CORS(app, origins=[FRONTEND_URL], supports_credentials=True)
@@ -212,3 +212,4 @@ def ask():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
