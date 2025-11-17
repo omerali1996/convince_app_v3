@@ -23,7 +23,7 @@ export default function ScenariosScreen() {
         <h2 style={title}>Senaryolar</h2>
       </div>
 
-      <div style={grid}>
+      <div className="grid-2">
         {/* Sol liste */}
         <div className="scroll-area" style={listCol}>
           {scenarios.map((s) => (
@@ -122,19 +122,6 @@ const headerRow = {
 };
 
 const title = { fontSize: 22, fontWeight: 600, color: "var(--text)" };
-
-/* Responsive grid */
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "1fr 2fr",
-  gap: 14,
-  minHeight: 360,
-};
-
-/* Mobile tek sütun */
-if (typeof window !== "undefined" && window.innerWidth < 768) {
-  grid.gridTemplateColumns = "1fr";
-}
 
 const listCol = {
   display: "flex",
