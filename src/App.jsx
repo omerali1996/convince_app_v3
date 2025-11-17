@@ -26,8 +26,8 @@ function ScreenSwitcher() {
   return (
     <div style={rootWrap}>
       <div className="container">
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-          <div style={{ fontSize: 13, opacity: .85 }}>
+        <div style={topRow}>
+          <div style={topBadge}>
             {checking ? "Giriş durumunuz kontrol ediliyor..." : user ? `👋 ${user.name}` : "Misafir"}
           </div>
         </div>
@@ -55,6 +55,24 @@ const rootWrap = {
   alignItems: "center",
   justifyContent: "center",
   padding: "24px"
+};
+
+const topRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  marginBottom: 8
+};
+
+const topBadge = {
+  fontSize: 13,
+  opacity: .85,
+  background: "#172044",
+  color: "var(--accent)",
+  border: "1px solid rgba(255,255,255,.06)",
+  padding: "6px 10px",
+  borderRadius: 999,
+  fontWeight: 600,
+  letterSpacing: ".2px"
 };
 
 export default function App() {
