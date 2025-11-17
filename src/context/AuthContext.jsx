@@ -7,23 +7,23 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
 
-  // URL'den token'ı yakala (?token=...)
+  // URL'deki ?token=... parametresini al ve temizle
   useEffect(() => {
     const url = new URL(window.location.href);
     const token = url.searchParams.get("token");
     if (token) {
       localStorage.setItem("auth_token", token);
-      // URL'i temizle
       url.searchParams.delete("token");
       window.history.replaceState({}, "", url.toString());
     }
   }, []);
 
-  // token varsa /me ile kullanıcıyı doğrula
+  // Token varsa backend'den kimliğini doğrula
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
     if (!token) {
       setChecking(false);
+      setUser(null);
       return;
     }
     (async () => {
@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
         const { data } = await api.get("/api/auth/me");
         if (data?.authenticated) setUser(data.user);
         else setUser(null);
-      } catch (e) {
+      } catch {
         setUser(null);
       } finally {
         setChecking(false);
