@@ -1,5 +1,3 @@
-// "use client"; // Next.js kullanıyorsan aç
-
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useGame } from "../context/GameContext";
@@ -7,18 +5,15 @@ import { useAuth } from "../context/AuthContext";
 import { BACKEND_URL } from "../api";
 
 export default function WelcomeScreen() {
-  const { startGame } = useGame(); // 👈 Context'ten al
+  const { startGame } = useGame();
   const { user, checking, logout } = useAuth();
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showButton, setShowButton] = useState(false);
 
-  // 🔊 Tek Audio + sabit aralıklı tetikleme
   const keyAudioRef = useRef(null);
   const nextTickRef = useRef(0);
   const CLICK_INTERVAL = 180; // ms
-
-  // ⏱️ Yazım zamanlayıcıları (skip için temizleyebilmek adına)
   const startTimeoutRef = useRef(null);
   const typingIntervalRef = useRef(null);
 
@@ -36,8 +31,8 @@ Hazırsan, oyun başlasın. 🧠💥`;
     const a = keyAudioRef.current;
     if (!a) return;
     const now = performance.now();
-    if (now < nextTickRef.current) return; // metronom
-    if (!a.paused) return;                 // üst üste bindirme
+    if (now < nextTickRef.current) return;
+    if (!a.paused) return;
     try {
       a.volume = 0.06;
       a.playbackRate = 1.0;
@@ -56,7 +51,6 @@ Hazırsan, oyun başlasın. 🧠💥`;
     } catch {}
   };
 
-  // ⏩ Skip: klavye yazma efektini atla
   const handleSkip = () => {
     if (startTimeoutRef.current) {
       clearTimeout(startTimeoutRef.current);
@@ -91,7 +85,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
           setIsTyping(false);
           clearInterval(typingIntervalRef.current);
           typingIntervalRef.current = null;
-          stopKeySound(); // yazı bitince ses durdur
+          stopKeySound();
           setTimeout(() => setShowButton(true), 500);
         }
       }, 50);
@@ -112,8 +106,8 @@ Hazırsan, oyun başlasın. 🧠💥`;
   }, []);
 
   const handleStart = () => {
-    stopKeySound(); // güvenli kapanış
-    startGame();    // 👈 welcome → scenarios
+    stopKeySound();
+    startGame();
   };
 
   const loginWith = (provider) => {
@@ -122,7 +116,6 @@ Hazırsan, oyun başlasın. 🧠💥`;
 
   return (
     <div className="ws-wrap" style={wrap}>
-      {/* 📱 Responsive CSS */}
       <style>{responsiveStyles}</style>
 
       <motion.div
@@ -132,10 +125,9 @@ Hazırsan, oyun başlasın. 🧠💥`;
         className="ws-card"
         style={card}
       >
-        {/* ⏩ Skip butonu (sağ altta) */}
         {isTyping && (
           <button onClick={handleSkip} className="ws-skipBtn" style={skipBtn} title="Yazıyı atla">
-            Skip &rsaquo;
+            Skip ›
           </button>
         )}
 
@@ -148,7 +140,6 @@ Hazırsan, oyun başlasın. 🧠💥`;
           Müzakere.0
         </motion.h1>
 
-        {/* Auth durum kartı */}
         <div style={authBar}>
           {checking ? (
             <span style={{ opacity: 0.8 }}>Giriş doğrulanıyor…</span>
@@ -167,6 +158,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
               <button onClick={() => loginWith("google")} className="btn btn-secondary" style={providerBtn}>
                 <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Google ile Giriş
               </button>
+              {/* İstersen Facebook'u da açık bırak */}
               <button onClick={() => loginWith("facebook")} className="btn btn-secondary" style={providerBtn}>
                 <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Facebook ile Giriş
               </button>
@@ -200,34 +192,27 @@ Hazırsan, oyun başlasın. 🧠💥`;
   );
 }
 
-/* ---------- Responsive Styles ---------- */
 const responsiveStyles = `
   @media (max-width: 768px) {
     .ws-wrap { padding: 10px !important; }
-
     .ws-card {
       max-width: 100% !important;
       width: 100% !important;
-      padding: 28px 14px 48px !important; /* altta skip için biraz boşluk */
+      padding: 28px 14px 48px !important;
       border-radius: 16px !important;
     }
-
     .ws-subtitle {
       font-size: 15px !important;
       line-height: 1.65 !important;
       min-height: 44vh !important;
       letter-spacing: 0.1px !important;
     }
-
     .ws-textContainer { margin-bottom: 22px !important; }
-
     .ws-startBtn {
       width: 100% !important;
       font-size: 16px !important;
       padding: 12px 14px !important;
     }
-
-    /* ⤵ Skip sağ altta */
     .ws-skipBtn {
       bottom: 8px !important;
       right: 8px !important;
@@ -235,11 +220,8 @@ const responsiveStyles = `
       font-size: 12px !important;
     }
   }
-
   @media (max-width: 420px) {
-    .ws-card {
-      padding: 24px 10px 44px !important; /* altta skip için boşluk */
-    }
+    .ws-card { padding: 24px 10px 44px !important; }
     .ws-subtitle {
       font-size: 14px !important;
       line-height: 1.6 !important;
@@ -272,7 +254,7 @@ const card = {
 
 const skipBtn = {
   position: "absolute",
-  bottom: 12,          // ⤵ sağ altta
+  bottom: 12,
   right: 12,
   background: "transparent",
   border: "1px solid rgba(255,255,255,0.25)",
