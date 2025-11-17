@@ -112,7 +112,7 @@ Hazırsan, oyun başlasın. 🧠💥`;
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="ws-card"
+        className="ws-card card"
         style={card}
       >
         {isTyping && (
@@ -196,7 +196,7 @@ const responsiveStyles = `
     .ws-card {
       max-width: 100% !important;
       width: 100% !important;
-      padding: 28px 14px 48px !important;
+      padding: 28px 14px 56px !important;
       border-radius: 16px !important;
     }
 
@@ -225,7 +225,7 @@ const responsiveStyles = `
 
   @media (max-width: 420px) {
     .ws-card {
-      padding: 24px 10px 44px !important;
+      padding: 24px 10px 52px !important;
     }
     .ws-subtitle {
       font-size: 14px !important;
