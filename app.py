@@ -27,18 +27,7 @@ def extract_origin(url):
 FRONTEND_ORIGIN = extract_origin(FRONTEND_URL)
 
 # ---- CORS (/api/*) ----
-CORS(
-    app,
-    resources={
-        r"/api/*": {
-            "origins": [FRONTEND_ORIGIN] if FRONTEND_ORIGIN else "*",
-            "supports_credentials": True,
-            "allow_headers": ["Content-Type", "Authorization"],
-            "expose_headers": ["Authorization"],
-            "methods": ["GET", "POST", "OPTIONS"]
-        }
-    }
-)
+CORS(app)
 
 # ---- OpenAI ----
 API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -217,3 +206,4 @@ def ask():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
