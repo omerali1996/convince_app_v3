@@ -11,12 +11,11 @@ export default function GameScreen() {
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
   const [interimText, setInterimText] = useState("");
-  const [chatEnded, setChatEnded] = useState(false); // ✅ eklendi
+  const [chatEnded, setChatEnded] = useState(false);
   const scrollRef = useRef();
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // 🔽 EKLENDİ: hedef cümleyi güvenli karşılaştırmak için normalize yardımcı fonksiyonu
   const norm = (s = "") =>
     s
       .normalize("NFC")
@@ -25,7 +24,7 @@ export default function GameScreen() {
       .replace(/\s+/g, " ")
       .trim();
 
-  // --- Speech Recognition Setup ---
+  // Speech
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -37,7 +36,6 @@ export default function GameScreen() {
     recognition.lang = "tr-TR";
 
     recognition.onstart = () => {
-      console.log("🎤 Ses tanıma başladı");
       setListening(true);
       setInterimText("");
     };
@@ -56,14 +54,12 @@ export default function GameScreen() {
       setInterimText(interim);
     };
 
-    recognition.onerror = (event) => {
-      console.error("Ses tanıma hatası:", event.error);
+    recognition.onerror = () => {
       setListening(false);
       setInterimText("");
     };
 
     recognition.onend = () => {
-      console.log("Ses tanıma durdu");
       setListening(false);
       setInterimText("");
     };
@@ -88,7 +84,6 @@ export default function GameScreen() {
     setInput("");
   }, [currentScenario?.id]);
 
-  // Textarea'ya focus ver
   useEffect(() => {
     if (!listening && textareaRef.current) {
       textareaRef.current.focus();
@@ -97,7 +92,6 @@ export default function GameScreen() {
 
   if (!currentScenario) return <div style={empty}>Senaryo seçilmedi.</div>;
 
-  // --- Mikrofon kontrolü ---
   const startListening = () => {
     if (!recognitionRef.current) {
       alert("Tarayıcınız ses tanımayı desteklemiyor. Chrome veya Edge kullanın.");
@@ -106,9 +100,7 @@ export default function GameScreen() {
     try {
       recognitionRef.current.start();
       setListening(true);
-    } catch (error) {
-      console.error("Mikrofon başlatılamadı:", error);
-    }
+    } catch (error) {}
   };
 
   const stopListening = () => {
@@ -124,12 +116,11 @@ export default function GameScreen() {
     else startListening();
   };
 
-  // --- Mesaj gönder ---
   const sendMessage = async () => {
     const userMessage = input.trim();
-    if (!userMessage || loading || chatEnded) return; // ✅ chatEnded kontrolü eklendi
+    if (!userMessage || loading || chatEnded) return;
 
-    stopListening(); // gönderirken mikrofonu durdur
+    stopListening();
     setMessages((prev) => [...prev, { sender: "user", text: userMessage }]);
     setInput("");
     setInterimText("");
@@ -145,7 +136,6 @@ export default function GameScreen() {
       const aiText = (res.data?.answer || "").trim();
       setMessages((prev) => [...prev, { sender: "ai", text: aiText }]);
 
-      // 🔽 EKLENDİ — hedef cümle yakalanırsa başarı mesajı göster ve kilitle
       const goal = currentScenario?.goal || currentScenario?.Goal;
       if (goal && norm(aiText).includes(norm(goal))) {
         setChatEnded(true);
@@ -160,12 +150,10 @@ export default function GameScreen() {
         ]);
       }
 
-      // ✅ Cümle "görüşmeyi burada sonlandırıyorum" içeriyorsa kilitle
       if (aiText.toLowerCase().includes("görüşmeyi burada sonlandırıyorum")) {
         setChatEnded(true);
       }
     } catch (err) {
-      console.error(err);
       setMessages((prev) => [
         ...prev,
         { sender: "ai", text: "Cevap alınamadı." },
@@ -182,10 +170,9 @@ export default function GameScreen() {
     } else setMessages([]);
     setInput("");
     setInterimText("");
-    setChatEnded(false); // ✅ reset eklendi
+    setChatEnded(false);
   };
 
-  // Enter tuşu ile gönderme
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -240,12 +227,12 @@ export default function GameScreen() {
                   : listening
                   ? "Konuşun..."
                   : "Mesajınızı yazın…"
-              } // ✅ placeholder güncellendi
-              disabled={loading || chatEnded} // ✅ chatEnded eklendi
+              }
+              disabled={loading || chatEnded}
               rows={2}
               style={{
                 ...inputStyle,
-                color: listening ? "#ffbe5c" : "#fff",
+                color: listening ? "var(--accent)" : "var(--text)",
                 fontStyle: interimText ? "italic" : "normal",
                 resize: "none",
               }}
@@ -255,6 +242,7 @@ export default function GameScreen() {
                 onClick={stopListening}
                 style={stopButton}
                 title="Konuşmayı bitir"
+                className="btn btn-success"
               >
                 ✓
               </button>
@@ -264,20 +252,20 @@ export default function GameScreen() {
           <div style={buttonGroup}>
             <button
               onClick={sendMessage}
-              disabled={loading || chatEnded} // ✅ eklendi
-              style={buttonPrimary}
+              disabled={loading || chatEnded}
+              className="btn btn-primary"
             >
               {loading ? "Gönderiliyor..." : "Gönder"}
             </button>
-            <button onClick={resetChat} style={buttonSecondary}>
+            <button onClick={resetChat} className="btn btn-secondary">
               Yeni Oturum
             </button>
             <button
               onClick={toggleMic}
-              disabled={chatEnded} // ✅ eklendi
+              disabled={chatEnded}
+              className="btn btn-secondary"
               style={{
-                ...buttonSecondary,
-                background: listening ? "#2e8b57" : "#182240",
+                background: listening ? "#2e8b57" : undefined,
                 opacity: chatEnded ? 0.6 : 1,
                 cursor: chatEnded ? "not-allowed" : "pointer",
               }}
@@ -288,7 +276,7 @@ export default function GameScreen() {
                 ? "🔴 Dinleniyor..."
                 : "🗣️ Konuşun"}
             </button>
-            <button onClick={exitGame} style={buttonSecondary}>
+            <button onClick={exitGame} className="btn btn-secondary">
               Çıkış
             </button>
           </div>
@@ -323,19 +311,22 @@ const animationStyles = `
 `;
 
 const container = { display: "flex", flexDirection: "column", gap: 12 };
+
 const topCard = {
-  background: "#0f162f",
+  background: "var(--card)",
   border: "1px solid rgba(255,255,255,.06)",
   borderRadius: 16,
   padding: 14,
 };
+
 const story = { marginTop: 6, color: "var(--text)", opacity: 0.95, lineHeight: 1.6 };
+
 const chatContainer = {
   flex: 1,
   padding: 12,
   border: "1px solid rgba(255,255,255,.06)",
   borderRadius: 16,
-  background: "#0f162f",
+  background: "var(--card)",
   minHeight: 260,
   maxHeight: 420,
   display: "flex",
@@ -343,33 +334,38 @@ const chatContainer = {
   gap: 10,
   overflowY: "auto",
 };
+
 const bubbleBase = {
   padding: "10px 14px",
   borderRadius: 16,
   maxWidth: "85%",
   boxShadow: "0 8px 24px rgba(0,0,0,.22)",
 };
+
 const userMessage = {
   ...bubbleBase,
   alignSelf: "flex-end",
-  background: "linear-gradient(180deg, #ffbe5c, #ffb84c)",
+  background: "linear-gradient(180deg, var(--accent), #ffb84c)",
   color: "#101010",
   borderTopRightRadius: 4,
 };
+
 const aiMessage = {
   ...bubbleBase,
   alignSelf: "flex-start",
   background: "#121a34",
-  color: "#eaf0ff",
+  color: "var(--text)",
   borderTopLeftRadius: 4,
   border: "1px solid rgba(255,255,255,.06)",
 };
+
 const inputSection = {
   display: "flex",
   flexDirection: "column",
   gap: 10,
   marginTop: 12,
 };
+
 const inputStyle = {
   width: "100%",
   padding: "10px 12px",
@@ -377,53 +373,35 @@ const inputStyle = {
   borderRadius: 12,
   border: "1px solid rgba(255,255,255,0.15)",
   background: "#0f162f",
-  color: "#fff",
+  color: "var(--text)",
   fontSize: 15,
 };
+
 const stopButton = {
   position: "absolute",
   right: 10,
   top: "50%",
   transform: "translateY(-50%)",
-  background: "#2e8b57",
-  border: "none",
   borderRadius: "50%",
   width: 32,
   height: 32,
   cursor: "pointer",
-  color: "#fff",
   fontSize: 18,
   fontWeight: "bold",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  boxShadow: "0 2px 8px rgba(46,139,87,0.4)",
 };
+
 const buttonGroup = { display: "flex", flexDirection: "column", gap: 8 };
-const buttonPrimary = {
-  background: "linear-gradient(180deg, #ffbe5c, #ffb84c)",
-  border: "none",
-  borderRadius: 10,
-  padding: "10px 12px",
-  cursor: "pointer",
-  color: "#101010",
-  fontWeight: 600,
-};
-const buttonSecondary = {
-  background: "#182240",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: 10,
-  padding: "10px 12px",
-  cursor: "pointer",
-  color: "#eaf0ff",
-  fontWeight: 500,
-};
+
 const empty = {
   textAlign: "center",
   fontSize: 18,
   color: "var(--muted)",
   marginTop: 40,
 };
+
 const listeningIndicator = {
   position: "fixed",
   top: 20,
@@ -438,6 +416,7 @@ const listeningIndicator = {
   boxShadow: "0 4px 20px rgba(46,139,87,0.4)",
   zIndex: 1000,
 };
+
 const pulse = {
   width: 12,
   height: 12,
