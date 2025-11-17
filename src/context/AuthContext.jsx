@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import api, { BACKEND_URL } from "../api";
+import api from "../api";
 
 const AuthContext = createContext();
 
