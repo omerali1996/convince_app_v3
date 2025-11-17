@@ -8,35 +8,30 @@ from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 import jwt
 
-from scenarios import scenarios
+from scenarios import scenarios  # mevcut sözlük
 
 app = Flask(__name__)
 
 # ---- Config ----
-FRONTEND_URL = os.environ.get("FRONTEND_URL")  # asla query içermesin!
+FRONTEND_URL = os.environ.get("FRONTEND_URL")  # query YOK
 BACKEND_URL = os.environ.get("BACKEND_URL")
 app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
 JWT_SECRET = os.environ.get("JWT_SECRET")
 
-# Başta kritik env kontrolleri (hata olursa net mesaj ver)
-_missing = [k for k in ["FRONTEND_URL", "BACKEND_URL", "FLASK_SECRET_KEY", "JWT_SECRET",
-                        "OPENAI_API_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
-            if not os.environ.get(k)]
-if _missing:
-    raise RuntimeError(f"Missing required env vars: {', '.join(_missing)}")
-
 def extract_origin(url):
+    if not url:
+        return None
     u = urlparse(url)
     return f"{u.scheme}://{u.netloc}"
 
 FRONTEND_ORIGIN = extract_origin(FRONTEND_URL)
 
-# ---- CORS (sadece /api/*) ----
+# ---- CORS (/api/*) ----
 CORS(
     app,
     resources={
         r"/api/*": {
-            "origins": [FRONTEND_ORIGIN],
+            "origins": [FRONTEND_ORIGIN] if FRONTEND_ORIGIN else "*",
             "supports_credentials": True,
             "allow_headers": ["Content-Type", "Authorization"],
             "expose_headers": ["Authorization"],
@@ -46,20 +41,26 @@ CORS(
 )
 
 # ---- OpenAI ----
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+API_KEY = os.environ.get("OPENAI_API_KEY")
+if not API_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable is not set!")
+client = OpenAI(api_key=API_KEY)
 
-# ---- OAuth (Google) ----
+# ---- OAuth ----
 oauth = OAuth(app)
+
 oauth.register(
     name="google",
     client_id=os.environ.get("GOOGLE_CLIENT_ID"),
     client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    # base veriyoruz; "userinfo" göreli path'i çalışsın
+    api_base_url="https://openidconnect.googleapis.com/v1/",
     client_kwargs={"scope": "openid email profile", "prompt": "consent"},
 )
 
 # ---- Helpers ----
-def issue_jwt(user):
+def issue_jwt(user: dict) -> str:
     now = int(time.time())
     payload = {
         "sub": user.get("sub"),
@@ -80,60 +81,53 @@ def current_user_from_auth_header():
         return None
     token = auth.split(" ", 1)[1].strip()
     try:
-        return jwt.decode(token, JWT_SECRET, algorithms=["HS256"], audience="convince-frontend")
+        data = jwt.decode(token, JWT_SECRET, algorithms=["HS256"], audience="convince-frontend")
+        return data
     except Exception:
         return None
 
-# ---- Health ----
-@app.route("/")
+# ---- Health / Root ----
+@app.get("/")
 def root():
     return "OK", 200
 
-@app.route("/healthz")
-def healthz():
-    return jsonify({"status": "ok"}), 200
-
-# ---- Auth ----
-@app.route("/api/auth/login/google")
+# ---- Auth endpoints ----
+@app.get("/api/auth/login/google")
 def auth_login_google():
     redirect_uri = f"{BACKEND_URL}/api/auth/callback/google"
     return oauth.google.authorize_redirect(redirect_uri)
 
-@app.route("/api/auth/callback/google")
+@app.get("/api/auth/callback/google")
 def auth_callback_google():
     try:
-        # 1) Token al
         token = oauth.google.authorize_access_token()
 
-        # 2) KESİN yoldan kullanıcı bilgisi: userinfo endpoint
-        # (ID token doğrulamasında takılmayalım; Authlib metadata'dan yolunu biliyor)
-        resp = oauth.google.get("userinfo")
-        if resp.status_code != 200:
-            # Bazı hesaplarda endpoint adı 'openid/userinfo' olabilir; alternatif dene
-            resp = oauth.google.get("openid/userinfo")
+        # 1) userinfo endpoint (base_url tanımlı → göreli path çalışır)
+        data = {}
+        try:
+            resp = oauth.google.get("userinfo")
+            if resp is not None and getattr(resp, "content", None):
+                data = resp.json()
+        except Exception:
+            data = {}
 
-        data = resp.json() if resp and resp.content else {}
+        # 2) fallback: ID token
+        if not data.get("sub"):
+            try:
+                idinfo = oauth.google.parse_id_token(token)
+            except Exception:
+                idinfo = {}
+            # idinfo varsa birleştir
+            if idinfo:
+                data = {**idinfo, **data}
 
-        # 3) user alanlarını topla (fallback: id_token varsa onu da deneriz)
         sub = data.get("sub") or data.get("id")
         name = data.get("name") or data.get("given_name") or ""
         email = data.get("email")
         picture = data.get("picture")
 
-        # Eğer userinfo boş döndüyse, parse_id_token'ı deneyelim (try/catch ile)
         if not sub:
-            try:
-                idinfo = oauth.google.parse_id_token(token)
-                sub = idinfo.get("sub") or idinfo.get("id")
-                name = name or idinfo.get("name")
-                email = email or idinfo.get("email")
-                picture = picture or idinfo.get("picture")
-            except Exception as e:
-                print("parse_id_token failed:", e)
-
-        if not sub:
-            # Kullanıcı bilgisi alamadıysak anlamlı 500
-            return jsonify({"error": "Failed to fetch Google userinfo"}), 500
+            return jsonify({"error": "Failed to fetch Google user info"}), 500
 
         user = {
             "sub": f"google:{sub}",
@@ -148,11 +142,10 @@ def auth_callback_google():
         return redirect(to, code=302)
 
     except Exception as e:
-        # Log + anlamlı dönüş (Render logs’ta stacktrace görünsün)
-        print("Google callback error:", repr(e))
+        print("Google callback error:", repr(e))  # Render logs
         return jsonify({"error": "OAuth callback failed", "detail": str(e)}), 500
 
-@app.route("/api/auth/me", methods=["GET"])
+@app.get("/api/auth/me")
 def auth_me():
     user = current_user_from_auth_header()
     if not user:
@@ -160,7 +153,7 @@ def auth_me():
     return jsonify({"authenticated": True, "user": user})
 
 # ---- Business endpoints ----
-@app.route("/api/scenarios", methods=["GET"])
+@app.get("/api/scenarios")
 def get_scenarios():
     simplified_scenarios = []
     for sid, scenario in scenarios.items():
@@ -175,7 +168,7 @@ def get_scenarios():
         })
     return jsonify(simplified_scenarios)
 
-@app.route("/api/ask", methods=["POST"])
+@app.post("/api/ask")
 def ask():
     data = request.json or {}
     user_input = data.get("user_input")
@@ -204,13 +197,11 @@ def ask():
         )
 
         messages = [{"role": "system", "content": system_content}]
-
         for m in history:
             if m.get("sender") == "user":
                 messages.append({"role": "user", "content": m.get("text", "")})
             else:
                 messages.append({"role": "assistant", "content": m.get("text", "")})
-
         messages.append({"role": "user", "content": user_input})
 
         chat_completion = client.chat.completions.create(
