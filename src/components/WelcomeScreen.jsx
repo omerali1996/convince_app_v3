@@ -1,25 +1,23 @@
-// "use client"; // Next.js kullanıyorsan aç
+// "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useGame } from "../context/GameContext";
 import { useAuth } from "../context/AuthContext";
 import { BACKEND_URL } from "../api";
 
 export default function WelcomeScreen() {
   const { startGame, fetchScenarios } = useGame();
-  const { user, checking } = useAuth();
+  const { user, checking, logout } = useAuth();
 
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showButton, setShowButton] = useState(false);
 
-  // 🔊 Tek Audio + sabit aralıklı tetikleme
   const keyAudioRef = useRef(null);
   const nextTickRef = useRef(0);
-  const CLICK_INTERVAL = 180; // ms
+  const CLICK_INTERVAL = 180;
 
-  // ⏱️ Yazım zamanlayıcıları
   const startTimeoutRef = useRef(null);
   const typingIntervalRef = useRef(null);
 
@@ -36,12 +34,13 @@ Hazırsan, oyun başlasın. 🧠💥`;
   const playKeySound = () => {
     const a = keyAudioRef.current;
     if (!a) return;
+
     const now = performance.now();
     if (now < nextTickRef.current) return;
     if (!a.paused) return;
+
     try {
       a.volume = 0.06;
-      a.playbackRate = 1.0;
       a.currentTime = 0;
       a.play().catch(() => {});
       nextTickRef.current = now + CLICK_INTERVAL;
@@ -58,8 +57,8 @@ Hazırsan, oyun başlasın. 🧠💥`;
   };
 
   const handleSkip = () => {
-    if (startTimeoutRef.current) clearTimeout(startTimeoutRef.current);
-    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+    clearTimeout(startTimeoutRef.current);
+    clearInterval(typingIntervalRef.current);
     stopKeySound();
     setDisplayedText(fullText);
     setIsTyping(false);
@@ -69,7 +68,6 @@ Hazırsan, oyun başlasın. 🧠💥`;
   useEffect(() => {
     keyAudioRef.current = new Audio("/sounds/mechanical-key.mp3");
     keyAudioRef.current.preload = "auto";
-    keyAudioRef.current.loop = false;
 
     startTimeoutRef.current = setTimeout(() => {
       setIsTyping(true);
@@ -82,65 +80,34 @@ Hazırsan, oyun başlasın. 🧠💥`;
           if (ch.trim() !== "" && ch !== "\n") playKeySound();
           index++;
         } else {
-          setIsTyping(false);
           clearInterval(typingIntervalRef.current);
-          typingIntervalRef.current = null;
           stopKeySound();
+          setIsTyping(false);
           setTimeout(() => setShowButton(true), 500);
         }
       }, 50);
     }, 1200);
 
     return () => {
-      if (startTimeoutRef.current) clearTimeout(startTimeoutRef.current);
-      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+      clearTimeout(startTimeoutRef.current);
+      clearInterval(typingIntervalRef.current);
       stopKeySound();
-      keyAudioRef.current = null;
     };
   }, []);
 
-  // ✅ Google ile giriş tamamlanınca otomatik → senaryolar + scenarios screen
-  useEffect(() => {
-    const goIfLoggedIn = async () => {
-      if (!checking && user) {
-        try {
-          await fetchScenarios();
-        } finally {
-          startGame();
-        }
-      }
-    };
-    goIfLoggedIn();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, checking]);
-
-  // 👤 Misafir akışı: önce senaryoları çek → sonra scenarios
-  const handleGuestStart = async () => {
+  // ✅ Misafir: önce senaryoları çek, sonra ekrana geç
+  const handleStart = async () => {
     stopKeySound();
     try {
-      await fetchScenarios();
+      await fetchScenarios(); // auth yoksa GameContext public fallback'i dener
     } finally {
-      startGame();
+      startGame(); // her durumda scenariosa geç
     }
   };
 
+  // ✅ Google login tıklandığında backend'e yönlendir
   const loginWithGoogle = () => {
     window.location.href = `${BACKEND_URL}/api/auth/login/google`;
-  };
-
-  // CTA animasyon variant'ları (alttan kayarak)
-  const ctaParent = {
-    initial: { opacity: 0, y: 30 },
-    animate: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.45, ease: "easeOut", when: "beforeChildren", staggerChildren: 0.1 },
-    },
-  };
-
-  const ctaItem = {
-    initial: { opacity: 0, y: 24 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
   };
 
   return (
@@ -151,13 +118,13 @@ Hazırsan, oyun başlasın. 🧠💥`;
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="ws-card"
+        className="ws-card card"
         style={card}
       >
         {isTyping && (
           <button
             onClick={handleSkip}
-            className="ws-skipBtn"
+            className="ws-skipBtn btn btn-secondary"
             style={skipBtn}
             title="Yazıyı atla"
           >
@@ -174,13 +141,31 @@ Hazırsan, oyun başlasın. 🧠💥`;
           Müzakere.0
         </motion.h1>
 
-        {/* Bilgilendirme */}
-        <div style={tinyInfo}>
-          {checking
-            ? "Giriş doğrulanıyor…"
-            : user
-            ? `👋 ${user.name} ile devam ediliyor…`
-            : "Devam etmek için bir yol seçin"}
+        {/* AUTH BAR */}
+        <div style={authBar}>
+          {checking ? (
+            <span style={{ opacity: 0.85 }}>Giriş doğrulanıyor…</span>
+          ) : user ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {user.picture && (
+                <img
+                  src={user.picture}
+                  alt="pp"
+                  width={28}
+                  height={28}
+                  style={{ borderRadius: "50%" }}
+                />
+              )}
+              <span style={{ fontWeight: 600 }}>{user.name}</span>
+              <button onClick={logout} className="btn btn-secondary">
+                Çıkış
+              </button>
+            </div>
+          ) : (
+            <button onClick={loginWithGoogle} className="btn btn-secondary">
+              <span style={{ fontSize: 18 }}>🟦</span>&nbsp; Google ile Giriş
+            </button>
+          )}
         </div>
 
         <div className="ws-textContainer" style={textContainer}>
@@ -190,48 +175,20 @@ Hazırsan, oyun başlasın. 🧠💥`;
           </div>
         </div>
 
-        {/* CTA Butonları: alt alta + alttan kayarak */}
-        <AnimatePresence>
-          {showButton && !user && !checking && (
-            <motion.div
-              variants={ctaParent}
-              initial="initial"
-              animate="animate"
-              style={ctaCol}
-            >
-              <motion.button
-                variants={ctaItem}
-                onClick={loginWithGoogle}
-                style={googleBtn}
-              >
-                <img
-                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                  alt="Google"
-                  width={18}
-                  height={18}
-                  style={{ marginRight: 10 }}
-                />
-                Google ile Giriş Yap
-              </motion.button>
-
-              <motion.div variants={ctaItem} style={divider}>
-                <span style={dividerLine} />
-                <span style={dividerText}>veya</span>
-                <span style={dividerLine} />
-              </motion.div>
-
-              <motion.button
-                variants={ctaItem}
-                onClick={handleGuestStart}
-                style={guestBtn}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Misafir Oyna
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {showButton && (
+          <motion.button
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            onClick={handleStart}
+            className="ws-startBtn btn btn-primary"
+            style={buttonStyle}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {user ? "Oynamaya Başla" : "Misafir Oyna"}
+          </motion.button>
+        )}
       </motion.div>
     </div>
   );
@@ -258,6 +215,12 @@ const responsiveStyles = `
 
     .ws-textContainer { margin-bottom: 22px !important; }
 
+    .ws-startBtn {
+      width: 100% !important;
+      font-size: 16px !important;
+      padding: 12px 14px !important;
+    }
+
     .ws-skipBtn {
       bottom: 8px !important;
       right: 8px !important;
@@ -283,20 +246,19 @@ const wrap = {
   alignItems: "center",
   justifyContent: "center",
   minHeight: "100vh",
-  background: "radial-gradient(circle at center, #0f162f, #0a0f1f)",
   padding: "20px",
 };
 
 const card = {
   textAlign: "center",
   padding: "40px 32px",
-  background: "rgba(15, 22, 47, 0.95)",
+  background: "var(--card)",
   borderRadius: 20,
   border: "1px solid rgba(255,255,255,.06)",
-  boxShadow: "0 8px 24px rgba(0,0,0,.4)",
+  boxShadow: "0 8px 24px rgba(0,0,0,.35)",
   maxWidth: 600,
   width: "90%",
-  backdropFilter: "blur(10px)",
+  backdropFilter: "blur(6px)",
   position: "relative",
 };
 
@@ -304,126 +266,70 @@ const skipBtn = {
   position: "absolute",
   bottom: 12,
   right: 12,
-  background: "transparent",
-  border: "1px solid rgba(255,255,255,0.25)",
-  color: "rgba(255,255,255,0.85)",
-  padding: "6px 10px",
   borderRadius: 10,
-  cursor: "pointer",
   fontSize: 12,
   letterSpacing: "0.3px",
-  transition: "all .2s ease",
   zIndex: 2,
 };
 
-const title = {
-  fontSize: 32,
-  marginBottom: 12,
-  color: "#fff",
-  fontWeight: 600,
-  letterSpacing: "0.5px",
-};
-
-const tinyInfo = {
-  fontSize: 13,
-  opacity: 0.8,
-  marginBottom: 10,
-};
-
-const textContainer = { marginBottom: 28 };
-
-const subtitle = {
-  fontSize: 16,
-  color: "rgba(255,255,255,0.85)",
-  lineHeight: 1.8,
-  minHeight: 320,
-  textAlign: "left",
-  whiteSpace: "pre-wrap",
-  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-};
-
-const ctaCol = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 12,
-  marginTop: 4,
-};
-
-const googleBtn = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-  width: "100%",
-  padding: "12px 14px",
+const authBar = {
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  padding: "10px 12px",
   borderRadius: 12,
-  border: "1px solid rgba(255,255,255,.14)",
-  background: "linear-gradient(180deg, #18224a, #121a34)",
-  color: "#eaf0ff",
-  fontWeight: 700,
-  fontSize: 15,
-  cursor: "pointer",
-  boxShadow: "0 6px 18px rgba(0,0,0,.25)",
-};
-
-const divider = {
+  marginBottom: 12,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   gap: 10,
-  margin: "4px 0 2px",
-  opacity: 0.8,
 };
 
-const dividerLine = {
-  height: 1,
-  flex: 1,
-  background: "rgba(255,255,255,0.12)",
-};
+const textContainer = { marginBottom: 32 };
 
-const dividerText = {
-  fontSize: 12,
-  letterSpacing: "0.3px",
-  color: "rgba(255,255,255,0.7)",
-  textTransform: "uppercase",
-};
-
-const guestBtn = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: 12,
-  border: "0",
-  background: "linear-gradient(135deg, #ffbe5c, #ff9d4c)",
-  color: "#1a1a1a",
-  fontWeight: 800,
+const subtitle = {
   fontSize: 16,
-  cursor: "pointer",
-  boxShadow: "0 6px 18px rgba(255, 190, 92, 0.25)",
-  letterSpacing: "0.4px",
+  color: "var(--text)",
+  opacity: 0.9,
+  lineHeight: 1.8,
+  minHeight: 360,
+  textAlign: "left",
+  whiteSpace: "pre-wrap",
+  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
 
 const cursor = {
   display: "inline-block",
   width: "2px",
   height: "1.2em",
-  backgroundColor: "#ffbe5c",
+  backgroundColor: "var(--accent)",
   marginLeft: "2px",
   animation: "blink 1s infinite",
   verticalAlign: "middle",
 };
 
+const title = {
+  fontSize: 32,
+  marginBottom: 24,
+  color: "var(--text)",
+  fontWeight: 600,
+  letterSpacing: "0.5px",
+};
+
+const buttonStyle = {
+  letterSpacing: "0.3px",
+};
+
 if (typeof document !== "undefined") {
-  const styleSheet = document.createElement("style");
-  styleSheet.textContent = `
+  const styleEl = document.createElement("style");
+  styleEl.textContent = `
     @keyframes blink {
       0%, 50% { opacity: 1; }
       51%, 100% { opacity: 0; }
     }
-
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
   `;
-  if (!document.head.querySelector('[data-welcome-styles]')) {
-    styleSheet.setAttribute("data-welcome-styles", "true");
-    document.head.appendChild(styleSheet);
+  if (!document.head.querySelector("[data-welcome-styles]")) {
+    styleEl.setAttribute("data-welcome-styles", "true");
+    document.head.appendChild(styleEl);
   }
 }
