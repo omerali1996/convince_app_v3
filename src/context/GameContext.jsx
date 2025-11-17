@@ -26,7 +26,7 @@ export function GameProvider({ children }) {
       const status = e?.response?.status;
       if (status === 401 || status === 403) {
         try {
-          const pub = await api.get("/api/scenarios/public");
+          const pub = await api.get("/api/scenarios");
           setScenarios(pub.data || []);
           return true;
         } catch (e2) {
@@ -77,3 +77,4 @@ export function GameProvider({ children }) {
 }
 
 export const useGame = () => useContext(GameContext);
+
