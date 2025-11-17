@@ -8,8 +8,8 @@ import { AnimatePresence, motion } from "framer-motion";
 
 const variants = {
   initial: { x: 40, opacity: 0 },
-  enter: { x: 0, opacity: 1, transition: { duration: 0.35, ease: "easeOut" } },
-  exit: { x: -40, opacity: 0, transition: { duration: 0.25, ease: "easeIn" } }
+  enter: { x: 0, opacity: 1, transition: { duration: .35, ease: "easeOut" } },
+  exit: { x: -40, opacity: 0, transition: { duration: .25, ease: "easeIn" } }
 };
 
 function ScreenSwitcher() {
@@ -27,7 +27,7 @@ function ScreenSwitcher() {
     <div style={rootWrap}>
       <div className="container">
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-          <div style={{ fontSize: 13, opacity: 0.85 }}>
+          <div style={{ fontSize: 13, opacity: .85 }}>
             {checking ? "Giriş durumunuz kontrol ediliyor..." : user ? `👋 ${user.name}` : "Misafir"}
           </div>
         </div>
